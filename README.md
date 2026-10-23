@@ -33,4 +33,6 @@ parolası ve Supabase service_role/secret anahtarları yalnızca sunucuda tutulu
 
 ## Git
 
-Ana dal: `main`. Uzak depo henüz bağlanmadı.
+Ana dal: `main`.
+
+GitHub: [zulficon/fixCampus-mobile](https://github.com/zulficon/fixCampus-mobile)
