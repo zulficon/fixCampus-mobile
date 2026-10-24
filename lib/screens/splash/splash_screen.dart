@@ -1,0 +1,66 @@
+import 'package:flutter/material.dart';
+import '../../core/constants/app_constants.dart';
+import '../../routes/app_routes.dart';
+
+/// Sadeleştirilmiş Açılış Ekranı (Logosuz, Minimalist)
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _navigateToNext();
+  }
+
+  Future<void> _navigateToNext() async {
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.main);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              AppConstants.appName,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF18181B),
+                letterSpacing: -0.8,
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              '1. Hafta — Mobil İskelet',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF71717A),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 36),
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF18181B)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

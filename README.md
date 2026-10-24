@@ -1,38 +1,52 @@
 # fixCampus Mobile
 
-fixCampus kampüs platformunun Flutter mobil uygulaması için ayrı Git deposu.
+fixCampus üniversite kampüs platformunun Flutter mobil uygulaması deposudur.
 
-## Durum
+BLM4587 iOS ile Mobil Uygulama Geliştirme I dersi dönem projesidir.
 
-Depo hazırlandı. Flutter uygulama iskeleti henüz oluşturulmadı.
+---
 
-## Planlanan yapı
+## 📌 Proje Durumu (Hafta 1)
 
-- Mobil uygulama: Flutter / Dart, ilk hedef Android.
-- Veri ve iş kuralları: ortak ASP.NET Core API.
-- Kimlik doğrulama ve fotoğraf depolama: proje planına göre Supabase Auth ve Storage.
-- İlk sürüm hedefi: Sosyal Radar ve Kayıp-Buluntu.
+1. Hafta (21–25 Ekim 2026) hedefleri doğrultusunda:
+- **Berna Kalkan**: Flutter ortak veri modelleri (`lib/models/`) tanımlandı, JSON serileştirme sözleşmesi ve test programı hazırlandı ([docs/hafta-01-veri-modeli.md](docs/hafta-01-veri-modeli.md)).
+- **Berke Mahmut Acar**: Flutter proje iskeleti, Android yapılandırması, Material 3 kampüs teması, rota yönetimi, durum yönetimi (`provider`) ve temel ekran akışları geliştirildi ([docs/hafta-01-mobil-iskelet.md](docs/hafta-01-mobil-iskelet.md)).
+- **Zülfikar Durak**: Ortak API istemcisi ve bağlantı yapılandırması (`lib/core/network/api_client.dart`) hazırlandı.
 
-Bu maddeler planlanan kapsamdır; uygulanmış özellikler değildir.
+---
 
-## Geliştirmeye başlama
+## 📱 Ekran Akışları
 
-Flutter uygulamasını bu depo kökünde oluşturmak için:
+1. **Açılış (Splash)**: Oturum durumuna göre yönlendirme.
+2. **Kimlik Doğrulama (Auth)**: Öğrenci ve Yönetici rolü ile Giriş / Kayıt ekranları.
+3. **Ana Kabuk (Main Shell)**:
+   - **Sosyal Radar**: Kampüsteki ders çalışma, spor ve buluşma etkinlikleri, kategori filtreleri, "Geliyorum" katılım sistemi.
+   - **Kayıp & Buluntu**: Kayıp eşyalar ve bulunan eşyalar sekmesi, aktif/çözüldü durumu filtreleme.
+   - **Yeni İlan Ver**: Sosyal buluşma (tarih/saat seçici) ve Kayıp-Buluntu (fotoğraf alanı) ilan oluşturma.
+   - **Profil**: Kullanıcı bilgileri, "İlanlarım" listesi, demo rol değiştirici ve çıkış.
+4. **İlan Detayı**: Konum, zaman, açıklama, katılım durumu, çözüldü işaretleme ve "Şikâyet Et" modal formu.
+5. **Yönetici Paneli**: Uygunsuz ilan şikâyetlerini inceleme, ilanı gizleme ve kategorileri denetleme.
+
+---
+
+## 🚀 Çalıştırma
+
+Gereksinimler: Flutter SDK (>= 3.10.0), Android SDK veya Emülatör.
 
 ```powershell
-flutter create --project-name fixcampus_mobile --platforms android .
+# Bağımlılıkları yükleyin
+flutter pub get
+
+# Uygulamayı Android emülatörde veya cihazda çalıştırın
 flutter run
 ```
 
-Depo adı `fixCampus-mobile`, Dart proje adı `fixcampus_mobile` olarak kullanılır.
+---
 
-## Yapılandırma
+## 👥 Grup Üyeleri
 
-Gerçek ortam dosyalarını ve imzalama anahtarlarını Git'e eklemeyin. Veritabanı
-parolası ve Supabase service_role/secret anahtarları yalnızca sunucuda tutulur.
+- Berna Kalkan (22290948, bernakalkann)
+- Berke Mahmut Acar (22290455, berke1227)
+- Zülfikar Durak (22290590, zulficon)
 
-## Git
-
-Ana dal: `main`.
-
-GitHub: [zulficon/fixCampus-mobile](https://github.com/zulficon/fixCampus-mobile)
+🔗 **GitHub:** [zulficon/fixCampus-mobile](https://github.com/zulficon/fixCampus-mobile)
