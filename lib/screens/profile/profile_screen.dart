@@ -112,9 +112,17 @@ class ProfileScreen extends StatelessWidget {
                 description: 'Oluşturduğunuz ilanlar bu bölümde listelenecektir.',
               )
             else
-              ...userListings.map(
-                (item) => ListingCard(
+              ...userListings.map((item) {
+                final isAttending = listingsProvider.isUserAttending(
+                  item.id,
+                  user?.id ?? '',
+                );
+                final count = listingsProvider.getAttendanceCount(item.id);
+
+                return ListingCard(
                   ilan: item,
+                  isAttending: isAttending,
+                  attendanceCount: count,
                   onTap: () {
                     Navigator.pushNamed(
                       context,
@@ -122,8 +130,8 @@ class ProfileScreen extends StatelessWidget {
                       arguments: item,
                     );
                   },
-                ),
-              ),
+                );
+              }),
 
             const SizedBox(height: 20),
           ],
