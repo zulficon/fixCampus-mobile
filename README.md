@@ -50,3 +50,24 @@ flutter run
 - Zülfikar Durak (22290590, zulficon)
 
 🔗 **GitHub:** [zulficon/fixCampus-mobile](https://github.com/zulficon/fixCampus-mobile)
+
+## Zülfikar birinci hafta API katkısı
+
+Dio tabanlı salt okunur servis `lib/services/api_service.dart` içindedir.
+Durum, örnek ilanlar ve veritabanı demosu için ayrı yanıt sözleşmeleri ile
+bağlantı, zaman aşımı, HTTP ve JSON hata yönetimini içerir. Ayrıntılar:
+[hafta-01-api-servisi.md](docs/hafta-01-api-servisi.md).
+
+Bu servis, Berke'nin `ApiClient` iskeletinden ve Berna'nın ikinci hafta
+giriş/profil entegrasyonundan ayrı bir katkıdır. İlan ekranları halen
+`ListingsProvider` içindeki demo kayıtları kullanır.
+
+```powershell
+$env:PUB_CACHE = "$PWD\.pub-cache"
+flutter pub get
+flutter test test/api_service_test.dart
+dart run tool/check_api.dart http://127.0.0.1:5168
+```
+
+Son komut için .NET API açık olmalıdır. `sample` / `isPersisted: false` çıktısı
+sabit örnek veriyi belirtir; canlı veritabanı okuması ayrı değerlendirilir.
