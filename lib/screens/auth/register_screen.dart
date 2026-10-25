@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/app_button.dart';
 
@@ -23,8 +25,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleRegister() {
-    Navigator.pushReplacementNamed(context, AppRoutes.main);
+  Future<void> _handleRegister() async {
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+            .hasMatch(_emailController.text.trim()) ||
+        _passwordController.text.length < 8 ||
+        _nameController.text.trim().length < 2 ||
+        _nameController.text.trim().length > 100) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Geçerli e-posta, ad soyad ve parola girin. Kayıt parolası en az 8 karakter olmalıdır.')));
+      return;
+    }
+    final auth = context.read<AuthProvider>();
+    final success = await auth.register(
+        adSoyad: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text);
+    if (!mounted) return;
+    if (success && auth.isLoggedIn) {
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.main, (_) => false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(auth.message ?? 'İşlem tamamlanamadı.')));
+    }
   }
 
   @override
@@ -50,7 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Öğrenci hesabı oluşturma iskeleti',
+                'Kampüs hesabınızı oluşturun',
                 style: TextStyle(
                   fontSize: 13,
                   color: Color(0xFF71717A),
@@ -61,7 +84,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Ad Soyad
               const Text(
                 'Ad Soyad',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF27272A)),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF27272A)),
               ),
               const SizedBox(height: 6),
               TextField(
@@ -75,7 +101,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // E-posta
               const Text(
                 'Kampüs E-Postası',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF27272A)),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF27272A)),
               ),
               const SizedBox(height: 6),
               TextField(
@@ -89,7 +118,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Parola
               const Text(
                 'Parola',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF27272A)),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF27272A)),
               ),
               const SizedBox(height: 6),
               TextField(
@@ -105,11 +137,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               AppButton(
                 label: 'Kayıt Ol',
                 onPressed: _handleRegister,
+                isLoading: context.watch<AuthProvider>().isLoading,
               ),
               const SizedBox(height: 16),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   const Text(
                     'Zaten hesabınız var mı?',

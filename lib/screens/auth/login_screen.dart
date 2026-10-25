@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/app_button.dart';
@@ -12,8 +14,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'berke@ogr.edu.tr');
-  final _passwordController = TextEditingController(text: '123456');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   @override
   void dispose() {
@@ -22,8 +24,24 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    Navigator.pushReplacementNamed(context, AppRoutes.main);
+  Future<void> _handleLogin() async {
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+            .hasMatch(_emailController.text.trim()) ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Geçerli bir e-posta adresi ve parola girin.')));
+      return;
+    }
+    final auth = context.read<AuthProvider>();
+    final success = await auth.login(
+        email: _emailController.text, password: _passwordController.text);
+    if (!mounted) return;
+    if (success && auth.isLoggedIn) {
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.main, (_) => false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(auth.message ?? 'İşlem tamamlanamadı.')));
+    }
   }
 
   @override
@@ -47,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Giriş Yap (1. Hafta İskeleti)',
+                'Hesabınızla giriş yapın',
                 style: TextStyle(
                   fontSize: 13,
                   color: Color(0xFF71717A),
@@ -58,7 +76,10 @@ class _LoginScreenState extends State<LoginScreen> {
               // E-posta
               const Text(
                 'E-Posta',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF27272A)),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF27272A)),
               ),
               const SizedBox(height: 6),
               TextField(
@@ -72,7 +93,10 @@ class _LoginScreenState extends State<LoginScreen> {
               // Parola
               const Text(
                 'Parola',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF27272A)),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF27272A)),
               ),
               const SizedBox(height: 6),
               TextField(
@@ -88,11 +112,13 @@ class _LoginScreenState extends State<LoginScreen> {
               AppButton(
                 label: 'Giriş Yap',
                 onPressed: _handleLogin,
+                isLoading: context.watch<AuthProvider>().isLoading,
               ),
               const SizedBox(height: 16),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   const Text(
                     'Hesabınız yok mu?',

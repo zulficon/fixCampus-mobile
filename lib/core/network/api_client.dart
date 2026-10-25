@@ -4,8 +4,9 @@ import '../constants/app_constants.dart';
 /// Ortak API İstemcisi İskeleti
 /// ASP.NET Core Web API ile haberleşmeyi ve Auth token yönetimini sağlar.
 class ApiClient {
-  ApiClient({String? baseUrl, Dio? dio})
-      : _dio = dio ??
+  ApiClient({String? baseUrl, Dio? dio, String? Function()? tokenProvider})
+      : _tokenProvider = tokenProvider,
+        _dio = dio ??
             Dio(
               BaseOptions(
                 baseUrl: baseUrl ?? AppConstants.defaultApiBaseUrl,
@@ -22,6 +23,7 @@ class ApiClient {
 
   final Dio _dio;
   String? _authToken;
+  final String? Function()? _tokenProvider;
 
   Dio get dio => _dio;
 
@@ -35,8 +37,11 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           // Eğer token mevcutsa Bearer Authorization header eklenir
-          if (_authToken != null && _authToken!.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $_authToken';
+          final token = _tokenProvider != null ? _tokenProvider!() : _authToken;
+          options.headers
+              .removeWhere((name, _) => name.toLowerCase() == 'authorization');
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
           }
           return handler.next(options);
         },

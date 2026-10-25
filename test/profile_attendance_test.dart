@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:fixcampus_mobile/providers/auth_provider.dart';
+import 'auth_provider_test.dart' show FakeAuthService;
 import 'package:fixcampus_mobile/providers/listings_provider.dart';
 import 'package:fixcampus_mobile/screens/profile/profile_screen.dart';
 import 'package:fixcampus_mobile/widgets/listing_card.dart';
@@ -12,8 +13,12 @@ void main() {
     await initializeDateFormatting('tr_TR', null);
   });
 
-  testWidgets('Profil ekranında ListingCard katılımcı sayısını ve durumunu Provider dan alır', (WidgetTester tester) async {
-    final authProvider = AuthProvider();
+  testWidgets(
+      'Profil ekranında ListingCard katılımcı sayısını ve durumunu Provider dan alır',
+      (WidgetTester tester) async {
+    final authProvider =
+        AuthProvider(service: FakeAuthService()..hasSession = true);
+    await authProvider.initialize();
     final listingsProvider = ListingsProvider();
 
     await tester.pumpWidget(
@@ -36,7 +41,8 @@ void main() {
 
     // İlk kartı incele
     final ListingCard firstCard = tester.widget(listingCardFinder.first);
-    final expectedCount = listingsProvider.getAttendanceCount(firstCard.ilan.id);
+    final expectedCount =
+        listingsProvider.getAttendanceCount(firstCard.ilan.id);
     final expectedAttending = listingsProvider.isUserAttending(
       firstCard.ilan.id,
       authProvider.currentUser?.id ?? '',

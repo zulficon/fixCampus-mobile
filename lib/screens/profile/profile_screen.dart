@@ -6,9 +6,37 @@ import '../../routes/app_routes.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/listing_card.dart';
 
-/// Sadeleştirilmiş Profil Ekranı (Yönetici Paneli ve Rol Geçişleri Kaldırıldı)
+/// Profil bilgileri API'den okunur; ad soyad API üzerinden güncellenir.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _editProfile(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) =>
+          _EditProfileDialog(initialName: auth.currentUser?.adSoyad ?? ''),
+    );
+    if (name == null || !context.mounted) return;
+    final success = await auth.updateProfile(name);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(success
+            ? 'Profil güncellendi.'
+            : auth.message ?? 'Profil güncellenemedi.')));
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    final success = await auth.logout();
+    if (!context.mounted) return;
+    if (success) {
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(auth.message ?? 'Çıkış yapılamadı.')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +82,7 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user?.adSoyad ?? 'Berke Mahmut Acar',
+                          user?.adSoyad ?? 'Profil bilgisi yüklenemedi',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -62,9 +90,9 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'Öğrenci',
-                          style: TextStyle(
+                        Text(
+                          auth.isAdmin ? 'Yönetici' : 'Öğrenci',
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF71717A),
                             fontWeight: FontWeight.w500,
@@ -77,6 +105,33 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
+
+            if (auth.email != null)
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(auth.email!)),
+            if (auth.message != null)
+              Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(auth.message!)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Wrap(spacing: 12, children: [
+                TextButton(
+                    onPressed:
+                        auth.isLoading ? null : () => _editProfile(context),
+                    child: const Text('Profili düzenle')),
+                if (user == null)
+                  TextButton(
+                      onPressed:
+                          auth.isLoading ? null : () => auth.initialize(),
+                      child: const Text('Tekrar dene')),
+                TextButton(
+                    onPressed: auth.isLoading ? null : () => _logout(context),
+                    child: const Text('Çıkış yap')),
+              ]),
+            ),
+            if (auth.isLoading) const LinearProgressIndicator(),
 
             // İlanlarım Başlığı
             Padding(
@@ -109,7 +164,8 @@ class ProfileScreen extends StatelessWidget {
               const EmptyState(
                 icon: Icons.post_add_outlined,
                 title: 'Henüz İlanınız Yok',
-                description: 'Oluşturduğunuz ilanlar bu bölümde listelenecektir.',
+                description:
+                    'Oluşturduğunuz ilanlar bu bölümde listelenecektir.',
               )
             else
               ...userListings.map((item) {
@@ -139,4 +195,43 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _EditProfileDialog extends StatefulWidget {
+  const _EditProfileDialog({required this.initialName});
+  final String initialName;
+  @override
+  State<_EditProfileDialog> createState() => _EditProfileDialogState();
+}
+
+class _EditProfileDialogState extends State<_EditProfileDialog> {
+  late final TextEditingController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Profili düzenle'),
+        content: TextField(
+            controller: _controller,
+            maxLength: 100,
+            decoration: const InputDecoration(labelText: 'Ad soyad')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Vazgeç')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, _controller.text),
+              child: const Text('Kaydet')),
+        ],
+      );
 }

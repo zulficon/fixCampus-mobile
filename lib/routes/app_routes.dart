@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../widgets/auth_guard.dart';
 import '../screens/admin/admin_panel_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
@@ -30,22 +31,26 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const RegisterScreen());
 
       case main:
-        return MaterialPageRoute(builder: (_) => const MainShellScreen());
+        return MaterialPageRoute(
+            builder: (_) => const AuthGuard(child: MainShellScreen()));
 
       case createListing:
-        return MaterialPageRoute(builder: (_) => const CreateListingScreen());
+        return MaterialPageRoute(
+            builder: (_) => const AuthGuard(child: CreateListingScreen()));
 
       case listingDetail:
         final ilan = settings.arguments as Ilan?;
         if (ilan != null) {
           return MaterialPageRoute(
-            builder: (_) => ListingDetailScreen(ilan: ilan),
+            builder: (_) => AuthGuard(child: ListingDetailScreen(ilan: ilan)),
           );
         }
         return _errorRoute('İlan parametresi eksik.');
 
       case adminPanel:
-        return MaterialPageRoute(builder: (_) => const AdminPanelScreen());
+        return MaterialPageRoute(
+            builder: (_) =>
+                const AuthGuard(adminOnly: true, child: AdminPanelScreen()));
 
       default:
         return _errorRoute('Rota bulunamadı: ${settings.name}');

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../routes/app_routes.dart';
 
@@ -18,9 +20,13 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(milliseconds: 900));
+    await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, AppRoutes.main);
+    final auth = context.read<AuthProvider>();
+    await auth.initialize();
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(
+        context, auth.isLoggedIn ? AppRoutes.main : AppRoutes.login);
   }
 
   @override
@@ -42,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             SizedBox(height: 6),
             Text(
-              '1. Hafta — Mobil İskelet',
+              'Kampüsüne bağlan',
               style: TextStyle(
                 fontSize: 13,
                 color: Color(0xFF71717A),

@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-25T18:45:21.572868Z",
+  "scope": "Gerçek mobil SupabaseAuthService + aynı ASP.NET Core web API",
+  "results": [
+    {
+      "test": "Swagger/OpenAPI profil ve Auth uçlarını sunuyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Girişsiz profil isteği 401",
+      "status": "PASS"
+    },
+    {
+      "test": "Sahte erişim belirteci 401",
+      "status": "PASS"
+    },
+    {
+      "test": "Mobil SDK ile kayıt ve API profil oluşturma",
+      "status": "PASS"
+    },
+    {
+      "test": "Mobilde çıkış sonrası oturum temizleniyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Yanlış parola gerçek Supabase tarafından reddediliyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Doğru parola ile mobil giriş",
+      "status": "PASS"
+    },
+    {
+      "test": "Profil değişikliği yeni API isteğinde kalıcı",
+      "status": "PASS"
+    },
+    {
+      "test": "Geçersiz profil adı API tarafından 400 ile reddediliyor",
+      "status": "PASS"
+    },
+    {
+      "test": "SDK refresh sonrası API güncel tokenla çalışıyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Kaydedilmiş oturum yeni SDK istemcisinde geri yükleniyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Web Auth API aynı mobil hesabıyla giriş yapıyor",
+      "status": "PASS"
+    },
+    {
+      "test": "İkinci hesap farklı profil ve öğrenci rolü alıyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Başkasının ID’si ve yönetici rolü gönderilse de yalnızca kendi profilini düzenliyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Webde yapılan profil değişikliği mobil SDK servisinde görünüyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Çıkıştan sonra refresh token yeniden kullanılamıyor",
+      "status": "PASS"
+    }
+  ],
+  "testAccountsCreated": 2,
+  "androidDeviceTest": "NOT_RUN"
+}

@@ -1,31 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fixcampus_mobile/providers/auth_provider.dart';
 import 'package:fixcampus_mobile/providers/listings_provider.dart';
 import 'package:fixcampus_mobile/models/models.dart';
 
 void main() {
-  group('AuthProvider Testleri', () {
-    test('Başlangıçta mock kullanıcı Berke atanmış olmalı', () {
-      final auth = AuthProvider();
-      expect(auth.currentUser, isNotNull);
-      expect(auth.currentUser!.adSoyad, 'Berke Mahmut Acar');
-      expect(auth.currentUser!.rol, KullaniciRolu.ogrenci);
-      expect(auth.isLoggedIn, isTrue);
-      expect(auth.isAdmin, isFalse);
-    });
-
-    test('Demo rol değiştirme testi', () {
-      final auth = AuthProvider();
-      auth.toggleRoleForDemo();
-      expect(auth.isAdmin, isTrue);
-      expect(auth.currentUser!.rol, KullaniciRolu.yonetici);
-
-      auth.toggleRoleForDemo();
-      expect(auth.isAdmin, isFalse);
-      expect(auth.currentUser!.rol, KullaniciRolu.ogrenci);
-    });
-  });
-
   group('ListingsProvider Testleri', () {
     late ListingsProvider provider;
 
@@ -99,3 +76,4 @@ void main() {
     });
   });
 }
+

@@ -1,96 +1,126 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
+import '../services/auth_service.dart';
 
-/// Kimlik Doğrulama ve Kullanıcı Oturum Yönetimi (İskelet & Demo Sağlayıcı)
 class AuthProvider extends ChangeNotifier {
-  AuthProvider() {
-    // Hafta 1 demosu için varsayılan örnek öğrenci kullanıcısı
-    _currentUser = Profil(
-      id: '00000000-0000-0000-0000-000000000001',
-      adSoyad: 'Berke Mahmut Acar',
-      rol: KullaniciRolu.ogrenci,
-      olusturulmaTarihi: DateTime.utc(2026, 10, 21),
-    );
-    _isLoggedIn = true;
+  AuthProvider({AuthService? service}) : _service = service {
+    _subscription = service?.changes.listen((_) {
+      if (_isLoading) return; // İşlemin son durumunu tek yerde uygula.
+      if (!service.hasSession) {
+        _currentUser = null;
+        _message = null;
+        notifyListeners();
+      } else {
+        unawaited(initialize());
+      }
+    }, onError: (Object error) {
+      _message =
+          'Oturum yenilenemedi. Bağlantınızı kontrol edip tekrar deneyin.';
+      _notify();
+    });
   }
 
+  final AuthService? _service;
+  StreamSubscription<void>? _subscription;
   Profil? _currentUser;
-  bool _isLoggedIn = false;
   bool _isLoading = false;
-
+  bool _disposed = false;
+  String? _message;
   Profil? get currentUser => _currentUser;
-  bool get isLoggedIn => _isLoggedIn;
+  bool get isLoggedIn => _service?.hasSession ?? false;
   bool get isLoading => _isLoading;
-  bool get isAdmin => _currentUser?.rol == KullaniciRolu.yonetici;
+  bool get isAdmin => isLoggedIn && _currentUser?.rol == KullaniciRolu.yonetici;
+  String? get email => _service?.email;
+  String? get message => _message;
+  bool get isConfigured => _service != null;
 
-  /// Giriş işlemi (Hafta 2'de Supabase Auth SDK ile bağlanacak iskelet)
-  Future<bool> login({
-    required String email,
-    required String password,
-    bool asAdmin = false,
-  }) async {
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  Future<bool> _run(Future<void> Function(AuthService) action) async {
+    if (_isLoading) return false;
+    final service = _service;
+    _message = null;
+    if (service == null) {
+      _message =
+          'Supabase bağlantı ayarları eksik. Kurulum belgesini kontrol edin.';
+      _notify();
+      return false;
+    }
     _isLoading = true;
-    notifyListeners();
-
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    _currentUser = Profil(
-      id: asAdmin
-          ? '00000000-0000-0000-0000-000000000099'
-          : '00000000-0000-0000-0000-000000000001',
-      adSoyad: asAdmin ? 'Kampüs Yönetici' : 'Berke Mahmut Acar',
-      rol: asAdmin ? KullaniciRolu.yonetici : KullaniciRolu.ogrenci,
-      olusturulmaTarihi: DateTime.now().toUtc(),
-    );
-    _isLoggedIn = true;
-    _isLoading = false;
-    notifyListeners();
-    return true;
+    _notify();
+    try {
+      await action(service);
+      return true;
+    } on AuthException catch (e) {
+      _message = e.code == 'invalid_credentials'
+          ? 'E-posta veya parola hatalı.'
+          : 'Kimlik doğrulama tamamlanamadı. Bilgilerinizi ve e-posta onayını kontrol edin.';
+    } on DioException catch (e) {
+      _message = e.response?.statusCode == 401
+          ? 'Oturum doğrulanamadı. Çıkış yapıp yeniden giriş yapın.'
+          : 'Profil API’sine ulaşılamadı. Bağlantıyı kontrol edip tekrar deneyin.';
+    } catch (_) {
+      _message =
+          'İşlem tamamlanamadı. Bağlantınızı kontrol edip tekrar deneyin.';
+    } finally {
+      if (!service.hasSession) _currentUser = null;
+      _isLoading = false;
+      _notify();
+    }
+    return false;
   }
 
-  /// Kayıt işlemi
-  Future<bool> register({
-    required String adSoyad,
-    required String email,
-    required String password,
-  }) async {
-    _isLoading = true;
-    notifyListeners();
+  Future<bool> initialize() => _run((s) async {
+        _currentUser = s.hasSession ? await s.loadProfile() : null;
+      });
 
-    await Future.delayed(const Duration(milliseconds: 600));
+  Future<bool> login({required String email, required String password}) =>
+      _run((s) async {
+        _currentUser = null;
+        await s.signIn(email.trim(), password);
+        _currentUser = await s.loadProfile();
+      });
 
-    _currentUser = Profil(
-      id: '00000000-0000-0000-0000-000000000002',
-      adSoyad: adSoyad,
-      rol: KullaniciRolu.ogrenci,
-      olusturulmaTarihi: DateTime.now().toUtc(),
-    );
-    _isLoggedIn = true;
-    _isLoading = false;
-    notifyListeners();
-    return true;
+  Future<bool> register(
+          {required String adSoyad,
+          required String email,
+          required String password}) =>
+      _run((s) async {
+        _currentUser = null;
+        await s.signUp(adSoyad.trim(), email.trim(), password);
+        if (s.hasSession) {
+          // API sahipliği tokendan çıkarır; rol ve kullanıcı ID'si gönderilmez.
+          _currentUser = await s.saveProfile(adSoyad.trim());
+        } else {
+          _message = 'Hesap oluşturuldu. E-postanızı onaylayıp giriş yapın.';
+        }
+      });
+
+  Future<bool> updateProfile(String name) async {
+    if (name.trim().length < 2 || name.trim().length > 100) {
+      _message = 'Ad soyad 2–100 karakter olmalıdır.';
+      _notify();
+      return false;
+    }
+    return _run((s) async {
+      _currentUser = await s.saveProfile(name.trim());
+    });
   }
 
-  /// Demo rol değiştirme (Öğrenci <-> Yönetici)
-  void toggleRoleForDemo() {
-    if (_currentUser == null) return;
-    final newRole = _currentUser!.rol == KullaniciRolu.ogrenci
-        ? KullaniciRolu.yonetici
-        : KullaniciRolu.ogrenci;
+  Future<bool> logout() => _run((s) async {
+        await s.signOut();
+        _currentUser = null;
+      });
 
-    _currentUser = Profil(
-      id: _currentUser!.id,
-      adSoyad: newRole == KullaniciRolu.yonetici ? 'Kampüs Yönetici' : 'Berke Mahmut Acar',
-      rol: newRole,
-      olusturulmaTarihi: _currentUser!.olusturulmaTarihi,
-    );
-    notifyListeners();
-  }
-
-  /// Çıkış yapma
-  void logout() {
-    _currentUser = null;
-    _isLoggedIn = false;
-    notifyListeners();
+  @override
+  void dispose() {
+    _disposed = true;
+    _subscription?.cancel();
+    super.dispose();
   }
 }

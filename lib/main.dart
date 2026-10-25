@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/network/api_client.dart';
+import 'services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/constants/app_constants.dart';
@@ -10,18 +13,32 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('tr_TR', null);
-  runApp(const FixCampusApp());
+  const url = String.fromEnvironment('SUPABASE_URL');
+  const key = String.fromEnvironment('SUPABASE_ANON_KEY');
+  AuthService? service;
+  if (url.isNotEmpty && key.isNotEmpty) {
+    await Supabase.initialize(url: url, publishableKey: key);
+    final client = Supabase.instance.client;
+    service = SupabaseAuthService(
+        client,
+        ApiClient(
+          tokenProvider: () => client.auth.currentSession?.accessToken,
+        ));
+  }
+  runApp(FixCampusApp(authService: service));
 }
 
 /// fixCampus Mobil Uygulama Kök Bileşeni (Android Telefon Çerçevesi Destekli)
 class FixCampusApp extends StatelessWidget {
-  const FixCampusApp({super.key});
+  const FixCampusApp({super.key, this.authService});
+  final AuthService? authService;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+            create: (_) => AuthProvider(service: authService)),
         ChangeNotifierProvider(create: (_) => ListingsProvider()),
       ],
       child: MaterialApp(
@@ -41,12 +58,13 @@ class FixCampusApp extends StatelessWidget {
               body: Center(
                 child: Container(
                   width: 412,
-                  height: 870,
+                  height: (screenSize.height - 40).clamp(0.0, 870.0),
                   margin: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(32),
-                    border: Border.all(color: const Color(0xFF27272A), width: 8),
+                    border:
+                        Border.all(color: const Color(0xFF27272A), width: 8),
                     boxShadow: const [
                       BoxShadow(
                         color: Colors.black54,
