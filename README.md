@@ -11,7 +11,7 @@ BLM4587 iOS ile Mobil Uygulama Geliştirme I dersi dönem projesidir.
 1. Hafta (21–25 Ekim 2026) hedefleri doğrultusunda:
 - **Berna Kalkan**: Flutter ortak veri modelleri (`lib/models/`) tanımlandı, JSON serileştirme sözleşmesi ve test programı hazırlandı ([docs/hafta-01-veri-modeli.md](docs/hafta-01-veri-modeli.md)).
 - **Berke Mahmut Acar**: Flutter proje iskeleti, Android yapılandırması, Material 3 kampüs teması, rota yönetimi, durum yönetimi (`provider`) ve temel ekran akışları geliştirildi ([docs/hafta-01-mobil-iskelet.md](docs/hafta-01-mobil-iskelet.md)).
-- **Zülfikar Durak**: Ortak API istemcisi ve bağlantı yapılandırması (`lib/core/network/api_client.dart`) hazırlandı.
+- **Zülfikar Durak**: Dio tabanlı API servisleri, yanıt sözleşmeleri ve bağlantı kontrolü (`lib/services/api_service.dart`) hazırlandı.
 
 ---
 
@@ -71,3 +71,19 @@ dart run tool/check_api.dart http://127.0.0.1:5168
 
 Son komut için .NET API açık olmalıdır. `sample` / `isPersisted: false` çıktısı
 sabit örnek veriyi belirtir; canlı veritabanı okuması ayrı değerlendirilir.
+
+## Zülfikar ikinci hafta rol ve oturum katkısı
+
+API profili doğrulanmadan korunan sayfa açılmaz; öğrenci yönetici sayfasına
+erişemez. Rol yeniden okunurken içerik gizlenir, doğrulama sonrası sekme durumu
+korunur. Profil API hatasında eski yönetici bilgisi kullanılmaz. Uygulamaya
+dönüşte rol yeniden okunur; oturum kaybında içerik kaldırılır.
+
+Ortak `AuthGuard`, `RoleSessionGuard` katmanına yönlendirilmiştir. Berna'nın
+giriş/profil servisi, Provider'ı ve modelleri değiştirilmemiştir.
+
+- [Rol ve oturum görevi](docs/hafta-02-rol-ve-oturum.md)
+- [Berna ikinci hafta incelemesi](docs/berna-hafta-02-inceleme.md)
+
+Bu kontrol mobil ekran erişimi içindir. Gerçek yönetim uçlarında sunucu
+yetkilendirmesi ayrıca gerekir. İlanlar halen demo verisi kullanır.
