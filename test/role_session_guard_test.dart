@@ -271,4 +271,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Profili düzenle'), findsOneWidget);
   });
+  testWidgets('Profil form doğrulama hatası geçerli oturumu kapatmaz', (
+    tester,
+  ) async {
+    service.hasSession = true;
+    await auth.initialize();
+    await mount(tester);
+    expect(await auth.updateProfile(' '), false);
+    await tester.pumpAndSettle();
+    expect(find.text('Korunan içerik'), findsOneWidget);
+    expect(find.text('Profil doğrulanamadı'), findsNothing);
+  });
 }

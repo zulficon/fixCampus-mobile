@@ -1,6 +1,12 @@
 {
-  "date": "2026-10-25T18:45:21.572868Z",
-  "scope": "Gerçek mobil SupabaseAuthService + aynı ASP.NET Core web API",
+  "date": "2026-10-26T11:46:13.694455Z",
+  "scope": "ApiAuthService: dört Auth işlemi kendi ASP.NET Core API üzerinden",
+  "authRequestPaths": {
+    "/api/auth/kayit": 2,
+    "/api/auth/cikis": 2,
+    "/api/auth/giris": 2,
+    "/api/auth/yenile": 2
+  },
   "results": [
     {
       "test": "Swagger/OpenAPI profil ve Auth uçlarını sunuyor",
@@ -15,7 +21,7 @@
       "status": "PASS"
     },
     {
-      "test": "Mobil SDK ile kayıt ve API profil oluşturma",
+      "test": "Web API ile mobil kayıt ve profil oluşturma",
       "status": "PASS"
     },
     {
@@ -23,7 +29,7 @@
       "status": "PASS"
     },
     {
-      "test": "Yanlış parola gerçek Supabase tarafından reddediliyor",
+      "test": "Yanlış parola kendi Web API üzerinden reddediliyor",
       "status": "PASS"
     },
     {
@@ -65,8 +71,32 @@
     {
       "test": "Çıkıştan sonra refresh token yeniden kullanılamıyor",
       "status": "PASS"
+    },
+    {
+      "test": "Dört Auth işlemi de yalnızca kendi Web API uçlarından geçti",
+      "status": "PASS"
     }
   ],
   "testAccountsCreated": 2,
-  "androidDeviceTest": "NOT_RUN"
+  "androidDeviceTest": "PASS",
+  "androidDevice": {
+    "os": "Android 16",
+    "api": 36,
+    "abi": "arm64-v8a",
+    "avd": "fixcampus-api36",
+    "phases": [
+      {
+        "phase": "auth_profile",
+        "status": "PASS"
+      },
+      {
+        "phase": "session_restart",
+        "status": "PASS"
+      },
+      {
+        "phase": "logout_restart",
+        "status": "PASS"
+      }
+    ]
+  }
 }

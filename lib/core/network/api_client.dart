@@ -5,19 +5,20 @@ import '../constants/app_constants.dart';
 /// ASP.NET Core Web API ile haberleşmeyi ve Auth token yönetimini sağlar.
 class ApiClient {
   ApiClient({String? baseUrl, Dio? dio, String? Function()? tokenProvider})
-      : _tokenProvider = tokenProvider,
-        _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? AppConstants.defaultApiBaseUrl,
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                },
-              ),
-            ) {
+    : _tokenProvider = tokenProvider,
+      _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: baseUrl ?? AppConstants.defaultApiBaseUrl,
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+            ),
+          ) {
     _initInterceptors();
   }
 
@@ -37,9 +38,11 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           // Eğer token mevcutsa Bearer Authorization header eklenir
-          final token = _tokenProvider != null ? _tokenProvider!() : _authToken;
-          options.headers
-              .removeWhere((name, _) => name.toLowerCase() == 'authorization');
+          final tokenProvider = _tokenProvider;
+          final token = tokenProvider != null ? tokenProvider() : _authToken;
+          options.headers.removeWhere(
+            (name, _) => name.toLowerCase() == 'authorization',
+          );
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }

@@ -7,7 +7,7 @@ import '../providers/auth_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../security/role_session_policy.dart';
 
-/// Berna'nın AuthProvider'ını değiştirmeden rol doğrulamasını ekranlara uygular.
+/// API üzerinden doğrulanan oturum ve rol durumunu ekranlara uygular.
 class RoleSessionGuard extends StatefulWidget {
   const RoleSessionGuard({
     super.key,
@@ -55,7 +55,7 @@ class _RoleSessionGuardState extends State<RoleSessionGuard>
       hasSession: auth.isLoggedIn,
       isLoading: auth.isLoading,
       profile: auth.currentUser,
-      hasError: auth.message?.isNotEmpty ?? false,
+      hasError: auth.hasSessionError,
       adminOnly: widget.adminOnly,
     );
 

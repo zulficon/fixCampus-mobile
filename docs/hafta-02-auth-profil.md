@@ -2,7 +2,9 @@
 
 ## Yapılanlar
 
-- Supabase SDK ile gerçek kayıt, giriş, çıkış; oturum saklama ve yenileme.
+- Kayıt ve giriş kendi ASP.NET Core Web API'mizdeki `/api/auth/kayit` ve `/api/auth/giris` uçlarına gider.
+- SDK oturumu saklar; otomatik yenileme `/api/auth/yenile`, çıkış `/api/auth/cikis` üzerinden yapılır. Flutter'dan Supabase Auth'a doğrudan ağ çağrısı yapılmaz.
+- `SUPABASE_URL` ve public key SDK proje/oturum kimliği için korunur; Auth ağ hedefi `API_BASE_URL` adresidir. Backend Supabase ile kendi yapılandırmasıyla konuşur.
 - API'den `GET /api/profil` ile profil/rol okuma ve `PUT /api/profil` ile ad soyad güncelleme.
 - Her istekte SDK'nın güncel erişim belirtecini kullanan ortak API istemcisi.
 - Profil düzenleme, tekrar deneme ve çıkış; girişsiz erişim ve oturum kaybı kontrolleri.
@@ -46,4 +48,6 @@ dart run tool/live_auth_check.dart /git-disindaki/config.json /git-disindaki/son
 
 Bu komut gerçek Supabase'de iki test hesabı açar; mevcut hesapları değiştirmez. Her çalıştırmada yeni hesaplar oluşturulur ve otomatik silinmez. Yerel API Development ortamında ve Swagger/OpenAPI açık olmalıdır.
 
-**Çalıştırılmış sonuçlar ve gerçek cihazda kalan kontroller:** [hafta-02-test-sonuclari.md](hafta-02-test-sonuclari.md).
+**Çalıştırılmış güncel sonuçlar (Android emülatörü dahil):** [hafta-02-test-sonuclari.md](hafta-02-test-sonuclari.md).
+
+Android cihaz testlerini tekrarlamak için [Android kurulum ve test adımları](hafta-02-android-test-kurulumu.md).

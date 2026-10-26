@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/network/api_client.dart';
+import 'core/network/web_api_auth_client.dart';
 import 'services/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -17,13 +18,21 @@ Future<void> main() async {
   const key = String.fromEnvironment('SUPABASE_ANON_KEY');
   AuthService? service;
   if (url.isNotEmpty && key.isNotEmpty) {
-    await Supabase.initialize(url: url, publishableKey: key);
+    final authApi = WebApiAuthClient(
+      apiBaseUrl: AppConstants.defaultApiBaseUrl,
+      supabaseUrl: url,
+    );
+    await Supabase.initialize(
+      url: url,
+      publishableKey: key,
+      httpClient: authApi,
+    );
     final client = Supabase.instance.client;
-    service = SupabaseAuthService(
-        client,
-        ApiClient(
-          tokenProvider: () => client.auth.currentSession?.accessToken,
-        ));
+    service = ApiAuthService(
+      client,
+      ApiClient(tokenProvider: () => client.auth.currentSession?.accessToken),
+      authApi,
+    );
   }
   runApp(FixCampusApp(authService: service));
 }
@@ -38,7 +47,8 @@ class FixCampusApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-            create: (_) => AuthProvider(service: authService)),
+          create: (_) => AuthProvider(service: authService),
+        ),
         ChangeNotifierProvider(create: (_) => ListingsProvider()),
       ],
       child: MaterialApp(
@@ -63,8 +73,10 @@ class FixCampusApp extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(32),
-                    border:
-                        Border.all(color: const Color(0xFF27272A), width: 8),
+                    border: Border.all(
+                      color: const Color(0xFF27272A),
+                      width: 8,
+                    ),
                     boxShadow: const [
                       BoxShadow(
                         color: Colors.black54,

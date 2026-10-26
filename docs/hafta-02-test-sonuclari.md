@@ -1,27 +1,57 @@
-# Berna Kalkan — 2. hafta test sonuçları
+# Berna Kalkan — 2. hafta Auth/profil doğrulaması
 
-Doğrulama: 25.10.2026 21:45 (Türkiye). Flutter 3.47.8, Dart 3.13.7, macOS ARM64.
+Son doğrulama: 26.10.2026 14:53 (Türkiye). Flutter 3.47.8, Dart 3.13.7.
 
-## Sonuç
+Hocanın geri bildirimi uygulandı: mobil Auth işlemleri doğrudan Supabase'e gitmez; kendi ASP.NET Core Web API'miz üzerinden yürür.
 
-| Kontrol | Sonuç | Doğrulama biçimi |
-|---|---|---|
-| Flutter kod analizi | Hata ve uyarı yok | `flutter analyze` |
-| Otomatik testler | 39/39 geçti | `flutter test --reporter expanded` |
-| Gerçek Supabase + ortak web API | 16/16 geçti | Mobil uygulamanın gerçek `SupabaseAuthService` ve `ApiClient` sınıfları |
-| Veri modeli terminal programı | Geçti | 6 model, JSON, saat dilimi ve hatalı veri kontrolleri |
-| Flutter web release derlemesi | Başarılı | `flutter build web --release` |
+## Sonuçlar
 
-## Gerçek sunucuda doğrulanan senaryolar
+| Kontrol | Sonuç |
+|---|---|
+| `flutter analyze` | Hata ve uyarı yok |
+| `flutter test --reporter expanded` | 77/77 geçti; mevcut takım testleri dahil |
+| Gerçek Web API Auth/profil terminal testi | 17/17 geçti |
+| Android APK derleme ve kurulum | Başarılı |
+| Android 16 / API 36 / ARM64 cihaz testi | 3/3 aşama geçti |
+
+## Auth isteklerinin hedefi
+
+| İşlem | Mobilin kullandığı kendi API ucu |
+|---|---|
+| Kayıt | `POST /api/auth/kayit` |
+| Giriş | `POST /api/auth/giris` |
+| Otomatik veya elle token yenileme | `POST /api/auth/yenile` |
+| Çıkış | `POST /api/auth/cikis` |
+
+`ApiAuthService` kayıt/giriş DTO'larını kendi API'mize gönderir. Dönen oturum SDK'ya aktarılır. SDK'nın otomatik yenileme ve çıkış HTTP istekleri de `WebApiAuthClient` üzerinden kendi API'mize yönlendirilir. Desteklenmeyen SDK Auth uçları doğrudan Supabase'e gönderilmez. SDK'nın saklama ve uygulama yaşam döngüsü desteği korunmuştur. SDK zamanlayıcısının da `/api/auth/yenile` kullandığı otomatik testle ayrıca doğrulandı.
+
+Canlı terminal testinde kaydedilen Auth hedefleri:
+
+- `/api/auth/kayit`: 2 istek
+- `/api/auth/cikis`: 2 istek
+- `/api/auth/giris`: 2 istek
+- `/api/auth/yenile`: 2 istek
+
+Bu sayımlar yalnızca uç adlarını içerir; parola ve token kaydedilmez.
+
+## Android cihazında geçen aşamalar
+
+1. Gerçek hesap oluşturma, boş giriş formu, yanlış/doğru parola, profil adı doğrulaması ve kaydetme, aynı Android hesabıyla web giriş API'si, token yenileme, çıkış ve iki farklı hesabın profil ayrımı.
+2. Uygulama süreci kapatılıp yeniden başlatıldığında gerçek Android deposundaki oturumun geri gelmesi; API'den güncel profilin okunması ve çıkış.
+3. Çıkıştan sonraki yeni uygulama sürecinde giriş ekranının gelmesi ve kayıtlı oturumun geri dönmemesi.
+
+Aşamalar ayrı APK çalıştırmalarıyla ve `--no-uninstall` ile yürütüldü; uygulama verisi aralarında korunmuştur. Android aşamalarında HTTP, Supabase veya cihaz depolaması taklit edilmedi.
+
+## Canlı terminal senaryoları
 
 | Senaryo | Sonuç |
 |---|---|
 | Swagger/OpenAPI profil ve Auth uçlarını sunuyor | PASS |
 | Girişsiz profil isteği 401 | PASS |
 | Sahte erişim belirteci 401 | PASS |
-| Mobil SDK ile kayıt ve API profil oluşturma | PASS |
+| Web API ile mobil kayıt ve profil oluşturma | PASS |
 | Mobilde çıkış sonrası oturum temizleniyor | PASS |
-| Yanlış parola gerçek Supabase tarafından reddediliyor | PASS |
+| Yanlış parola kendi Web API üzerinden reddediliyor | PASS |
 | Doğru parola ile mobil giriş | PASS |
 | Profil değişikliği yeni API isteğinde kalıcı | PASS |
 | Geçersiz profil adı API tarafından 400 ile reddediliyor | PASS |
@@ -32,30 +62,17 @@ Doğrulama: 25.10.2026 21:45 (Türkiye). Flutter 3.47.8, Dart 3.13.7, macOS ARM6
 | Başkasının ID’si ve yönetici rolü gönderilse de yalnızca kendi profilini düzenliyor | PASS |
 | Webde yapılan profil değişikliği mobil SDK servisinde görünüyor | PASS |
 | Çıkıştan sonra refresh token yeniden kullanılamıyor | PASS |
+| Dört Auth işlemi de yalnızca kendi Web API uçlarından geçti | PASS |
 
-## Otomatik testlerin kapsamı
+## Korunan davranışlar
 
-- Kayıt/giriş/çıkış ve profil düzenleme ekranları, boş form ve servis hataları.
-- Oturum kaybında korumalı ekranın kapanması; öğrenci/yönetici arayüz erişimi.
-- SDK değişiklikleri, yinelenen giriş isteğini önleme, profil API hatasından sonra tekrar deneme.
-- Yenilenen Bearer tokenın kullanılması ve çıkışta eski başlığın kaldırılması.
-- Gerçek `supabase_flutter` SDK ile oturumun saklanması, yeniden SDK başlatıldığında geri yüklenmesi ve çıkışta silinmesi. Bu testte HTTP ve cihaz tercih deposu taklit edilmiştir; gerçek cihaz yeniden başlatma testi değildir.
-- Mevcut veri modeli ve ilan sağlayıcı testleri de korunarak çalıştırılmıştır. İlanlar hâlen demo verisi kullanır; 3. hafta API bağlantısı bu değişikliğin kapsamı değildir.
+- Kalıcı SDK oturumu, yenileme, güncel Bearer tokenı, profil okuma/düzenleme ve çıkış.
+- Zülfikar'ın API'den doğrulanmış rol gerektiren ekran koruması ve uygulamaya dönüşte rolü yeniden okuma.
+- Profil/rol doğrulaması başarısız olduğunda korunan ekranın kapanması.
+- Basit profil form hatalarının geçerli oturumu bloke etmemesi; 401/403 ve oturum doğrulama hataları hâlâ erişimi kapatır.
 
-## Testlerde düzeltilen hatalar
+## Sınırlar
 
-1. API token sağlayıcısındaki eksik null kontrolü.
-2. Web ve mobil kayıt metadata alanı uyumsuzluğu (`ad_soyad` ortak alanı).
-3. Dar ekranlarda giriş/kayıt alt bağlantılarının taşması.
-4. Profil düzenleme penceresinde kapanış sırasında controller'ın erken temizlenmesi.
-5. SDK oturum yenileme hatalarının uygulamada yakalanması.
+Doğrulama Android emülatöründe yapılmıştır; fiziksel telefon ve iOS cihaz testi değildir. Yerel demo e-posta onayı kapalıdır; e-posta bağlantılı OAuth/şifre sıfırlama bu haftanın kapsamı değildir. İlan akışları 3. hafta kapsamındadır. Android debug derlemesinde mevcut Kotlin yapılandırması için gelecek Flutter sürümlerine yönelik geçiş uyarısı vardır; mevcut derleme ve testler başarılıdır.
 
-## Sınırlar ve kalan doğrulamalar
-
-- Android SDK/emülatör ve fiziksel Android cihaz bu ortamda yoktur. Android APK derlemesi, Android'e kurulum ve gerçek cihazda oturumun yeniden açılış testi yapılmadı.
-- Swagger kontrolü OpenAPI sözleşmesini okuyup aynı uçlara gerçek HTTP istekleri gönderilerek yapıldı. Swagger UI düğmelerine basılarak manuel prova yapılmadı.
-- Web–mobil ortak hesap ve veri tutarlılığı aynı ASP.NET Core API üzerinden doğrulandı. Web uygulamasının görsel ekran testi bu çalışma kapsamında yapılmadı.
-- Yönetici rolünü API'den okuma ve öğrenci hesabının kendine yönetici rolü verememesi doğrulandı. Gerçek yönetici hesabıyla bütün yönetim uçları denenmedi; 2. hafta rol kontrolü Zülfikar'ın görevidir.
-- GitHub yazma erişimi önceki denemede 403 döndürdüğü için değişiklikler repoya gönderilmedi. Bu rapor push/merge yapıldığı anlamına gelmez.
-
-Her canlı test çalıştırması iki benzersiz test hesabı oluşturur ve yalnızca bu hesapların profillerini düzenler. Hesaplar otomatik silinmez. Mevcut kullanıcı profilleri değiştirilmez. Raporlar ve paket gerçek parolaları, erişim/yenileme tokenlarını veya veritabanı bağlantı şifresini içermez.
+Gerçek yapılandırma ve test parolaları git dışında tutulur. Bu testler yalnızca iki benzersiz test hesabını/profilini kullanır; hesaplar otomatik silinmez.

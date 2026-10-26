@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import '../core/network/web_api_auth_client.dart';
 import 'package:supabase/supabase.dart';
 import '../core/network/api_client.dart';
 import '../models/models.dart';
@@ -15,8 +17,9 @@ abstract class AuthService {
   Future<Profil> saveProfile(String name);
 }
 
-class SupabaseAuthService implements AuthService {
-  SupabaseAuthService(this.client, this.api);
+class ApiAuthService implements AuthService {
+  ApiAuthService(this.client, this.api, this.authApi);
+  final WebApiAuthClient authApi;
   final SupabaseClient client;
   final ApiClient api;
 
@@ -28,16 +31,27 @@ class SupabaseAuthService implements AuthService {
   Stream<void> get changes => client.auth.onAuthStateChange.map((_) {});
   @override
   Future<void> signIn(String email, String password) async {
-    await client.auth.signInWithPassword(email: email, password: password);
+    final result = await authApi.authenticate('giris', {
+      'email': email.trim(),
+      'password': password,
+    });
+    await client.auth.recoverSession(jsonEncode(result));
   }
 
   @override
   Future<void> signUp(String name, String email, String password) async {
-    await client.auth
-        .signUp(email: email, password: password, data: {'ad_soyad': name});
+    final result = await authApi.authenticate('kayit', {
+      'adSoyad': name.trim(),
+      'email': email.trim(),
+      'password': password,
+    });
+    if (result['access_token'] is String) {
+      await client.auth.recoverSession(jsonEncode(result));
+    }
   }
 
   @override
+  // SDK yerel oturumu temizler; HTTP çıkışı WebApiAuthClient ile /api/auth/cikis olur.
   Future<void> signOut() => client.auth.signOut(scope: SignOutScope.local);
   @override
   Future<Profil> loadProfile() async {
@@ -60,8 +74,10 @@ class SupabaseAuthService implements AuthService {
 
   @override
   Future<Profil> saveProfile(String name) async {
-    final response = await api.dio
-        .put<Map<String, dynamic>>('/api/profil', data: {'adSoyad': name});
+    final response = await api.dio.put<Map<String, dynamic>>(
+      '/api/profil',
+      data: {'adSoyad': name},
+    );
     return Profil.fromJson(response.data!);
   }
 }
