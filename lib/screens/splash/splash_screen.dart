@@ -20,15 +20,15 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(milliseconds: 900));
+    await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
-
     final auth = context.read<AuthProvider>();
-    if (auth.isLoggedIn) {
-      Navigator.pushReplacementNamed(context, AppRoutes.main);
-    } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-    }
+    await auth.initialize();
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(
+      context,
+      auth.isLoggedIn ? AppRoutes.main : AppRoutes.login,
+    );
   }
 
   @override

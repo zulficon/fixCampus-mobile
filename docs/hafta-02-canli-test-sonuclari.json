@@ -1,0 +1,102 @@
+{
+  "date": "2026-10-26T11:46:13.694455Z",
+  "scope": "ApiAuthService: dört Auth işlemi kendi ASP.NET Core API üzerinden",
+  "authRequestPaths": {
+    "/api/auth/kayit": 2,
+    "/api/auth/cikis": 2,
+    "/api/auth/giris": 2,
+    "/api/auth/yenile": 2
+  },
+  "results": [
+    {
+      "test": "Swagger/OpenAPI profil ve Auth uçlarını sunuyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Girişsiz profil isteği 401",
+      "status": "PASS"
+    },
+    {
+      "test": "Sahte erişim belirteci 401",
+      "status": "PASS"
+    },
+    {
+      "test": "Web API ile mobil kayıt ve profil oluşturma",
+      "status": "PASS"
+    },
+    {
+      "test": "Mobilde çıkış sonrası oturum temizleniyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Yanlış parola kendi Web API üzerinden reddediliyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Doğru parola ile mobil giriş",
+      "status": "PASS"
+    },
+    {
+      "test": "Profil değişikliği yeni API isteğinde kalıcı",
+      "status": "PASS"
+    },
+    {
+      "test": "Geçersiz profil adı API tarafından 400 ile reddediliyor",
+      "status": "PASS"
+    },
+    {
+      "test": "SDK refresh sonrası API güncel tokenla çalışıyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Kaydedilmiş oturum yeni SDK istemcisinde geri yükleniyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Web Auth API aynı mobil hesabıyla giriş yapıyor",
+      "status": "PASS"
+    },
+    {
+      "test": "İkinci hesap farklı profil ve öğrenci rolü alıyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Başkasının ID’si ve yönetici rolü gönderilse de yalnızca kendi profilini düzenliyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Webde yapılan profil değişikliği mobil SDK servisinde görünüyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Çıkıştan sonra refresh token yeniden kullanılamıyor",
+      "status": "PASS"
+    },
+    {
+      "test": "Dört Auth işlemi de yalnızca kendi Web API uçlarından geçti",
+      "status": "PASS"
+    }
+  ],
+  "testAccountsCreated": 2,
+  "androidDeviceTest": "PASS",
+  "androidDevice": {
+    "os": "Android 16",
+    "api": 36,
+    "abi": "arm64-v8a",
+    "avd": "fixcampus-api36",
+    "phases": [
+      {
+        "phase": "auth_profile",
+        "status": "PASS"
+      },
+      {
+        "phase": "session_restart",
+        "status": "PASS"
+      },
+      {
+        "phase": "logout_restart",
+        "status": "PASS"
+      }
+    ]
+  }
+}

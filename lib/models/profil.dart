@@ -39,4 +39,21 @@ class Profil {
     if (sinif != null) map['sinif'] = sinif;
     return map;
   }
+
+  Profil copyWith({
+    String? id,
+    String? adSoyad,
+    KullaniciRolu? rol,
+    DateTime? olusturulmaTarihi,
+    String? bolum,
+    String? sinif,
+  }) =>
+      Profil(
+        id: id ?? this.id,
+        adSoyad: adSoyad ?? this.adSoyad,
+        rol: rol ?? this.rol,
+        olusturulmaTarihi: olusturulmaTarihi ?? this.olusturulmaTarihi,
+        bolum: bolum ?? this.bolum,
+        sinif: sinif ?? this.sinif,
+      );
 }

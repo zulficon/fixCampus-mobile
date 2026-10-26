@@ -1,5 +1,6 @@
 import 'dart:convert';
-import '../lib/models/models.dart';
+import 'dart:io';
+import 'package:fixcampus_mobile/models/models.dart';
 
 void main() {
   final profil = jsonDecode(r'''{"id": "00000000-0000-4000-8000-000000000001", "adSoyad": "Ornek", "rol": "Ogrenci", "olusturulmaTarihi": "2026-10-23T12:00:00.000Z"}''') as Map<String, dynamic>;
@@ -38,7 +39,7 @@ void main() {
   rejects(() => IlanFotografi.fromJson({...ilanFotografi, 'dosyaYolu': null}));
   rejects(() => Profil.fromJson({...profil, 'olusturulmaTarihi': 'yanlis'}));
   rejects(() => Profil.fromJson({...profil, 'olusturulmaTarihi': '2026-10-23T12:00:00'}));
-  print('PASS: 6 model, JSON dönüşümü, UTC, null tarih ve hatalı veri kontrolleri.');
+  stdout.writeln('PASS: 6 model, JSON dönüşümü, UTC, null tarih ve hatalı veri kontrolleri.');
 }
 
 void check(bool condition, String message) {
@@ -53,3 +54,4 @@ void rejects(void Function() action) {
   }
   throw StateError('Geçersiz JSON kabul edildi.');
 }
+
