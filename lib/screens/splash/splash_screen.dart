@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 
-/// Sadeleştirilmiş Açılış Ekranı (Logosuz, Minimalist)
+/// Açılış ve Oturum Yönlendirme Ekranı
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -20,7 +22,13 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _navigateToNext() async {
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, AppRoutes.main);
+
+    final auth = context.read<AuthProvider>();
+    if (auth.isLoggedIn) {
+      Navigator.pushReplacementNamed(context, AppRoutes.main);
+    } else {
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
+    }
   }
 
   @override
@@ -42,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             SizedBox(height: 6),
             Text(
-              '1. Hafta — Mobil İskelet',
+              'Kampüs Sosyal Buluşma ve Yardımlaşma',
               style: TextStyle(
                 fontSize: 13,
                 color: Color(0xFF71717A),

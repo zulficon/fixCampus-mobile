@@ -17,7 +17,7 @@ class ListingDetailScreen extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: const Color(0xFF18181B),
-        content: Text('1. Hafta İskeleti: "$actionName" işlemi henüz pasiftir.'),
+        content: Text('"$actionName" işlemi yakında kullanıma sunulacaktır.'),
       ),
     );
   }

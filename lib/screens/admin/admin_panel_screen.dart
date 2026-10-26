@@ -1,16 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/listings_provider.dart';
 import '../../theme/app_theme.dart';
 
-/// Yönetici Paneli İskeleti (Şikâyet ve Kategori Yönetimi Taslağı)
+/// Yönetici Paneli (Rol Yetki Koruması ile Denetim)
 class AdminPanelScreen extends StatelessWidget {
   const AdminPanelScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     final listingsProvider = context.watch<ListingsProvider>();
+
+    // Yetki kontrolü (Yalnızca Yönetici girebilir)
+    if (!auth.isAdmin) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Yetkisiz Erişim')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.gpp_bad_outlined, size: 64, color: Color(0xFFDC2626)),
+                const SizedBox(height: 16),
+                const Text(
+                  'Erişim İzniniz Yok',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Bu panel yalnızca Yönetici rolündeki hesaplar tarafından görüntülenebilir.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Color(0xFF71717A)),
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Geri Dön'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     final ornekSikayetler = [
       Sikayet(
@@ -27,7 +63,7 @@ class AdminPanelScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Yönetici Paneli (Taslak)'),
+          title: const Text('Yönetici Paneli'),
           bottom: const TabBar(
             indicatorColor: AppTheme.primaryBlack,
             labelColor: AppTheme.primaryBlack,

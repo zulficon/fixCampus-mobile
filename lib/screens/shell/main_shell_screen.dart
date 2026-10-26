@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
+import '../../providers/auth_provider.dart';
 import '../lost_found/lost_found_feed_screen.dart';
 import '../listings/create_listing_screen.dart';
 import '../profile/profile_screen.dart';
 import '../radar/radar_feed_screen.dart';
 
-/// Sadeleştirilmiş Ana Kabuk (Menü Geçişleri Aktif, Yönetici Rozetleri Kaldırıldı)
+/// Minimalist Ana Kabuk (Rol Duyarlı Üst Çubuk ve Sekme Yönetimi)
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
 
@@ -25,16 +27,41 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          AppConstants.appName,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF18181B),
-            letterSpacing: -0.5,
-          ),
+        title: Row(
+          children: [
+            const Text(
+              AppConstants.appName,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF18181B),
+                letterSpacing: -0.5,
+              ),
+            ),
+            if (auth.isAdmin) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF18181B),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'YÖNETİCİ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),

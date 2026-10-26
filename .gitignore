@@ -38,3 +38,5 @@ android/key.properties
 **/Flutter/.last_build_id
 **/xcuserdata/
 **/DerivedData/
+# Antigravity agents
+.agents/

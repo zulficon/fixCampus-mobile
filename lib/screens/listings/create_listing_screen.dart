@@ -31,7 +31,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
       const SnackBar(
         backgroundColor: Color(0xFF18181B),
         content: Text(
-          '1. Hafta İskeleti: İlan oluşturma API entegrasyonu 3. haftada aktifleşecektir.',
+          'İlan oluşturma özelliği yakında aktifleşecektir.',
         ),
       ),
     );
@@ -66,7 +66,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             ),
             const SizedBox(height: 2),
             const Text(
-              '1. Hafta İskelet Formu',
+              'Kampüs ile paylaşmak istediğiniz ilanı oluşturun',
               style: TextStyle(
                 fontSize: 13,
                 color: Color(0xFF71717A),
