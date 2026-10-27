@@ -8,6 +8,7 @@ import 'package:fixcampus_mobile/models/models.dart';
 import 'package:fixcampus_mobile/providers/auth_provider.dart';
 import 'package:fixcampus_mobile/providers/listings_provider.dart';
 import 'package:fixcampus_mobile/routes/app_routes.dart';
+import 'package:fixcampus_mobile/screens/admin/admin_panel_screen.dart';
 import 'package:fixcampus_mobile/screens/auth/login_screen.dart';
 import 'package:fixcampus_mobile/services/auth_service.dart';
 import 'package:fixcampus_mobile/widgets/role_session_guard.dart';
@@ -244,12 +245,12 @@ void main() {
     service.role = KullaniciRolu.yonetici;
     await auth.initialize();
     await mountRoute(tester, AppRoutes.adminPanel);
-    expect(find.text('Yönetici Paneli (Taslak)'), findsOneWidget);
+    expect(find.byType(AdminPanelScreen), findsOneWidget);
     service.failProfile = true;
     await auth.initialize();
     await tester.pumpAndSettle();
     expect(find.text('Profil doğrulanamadı'), findsOneWidget);
-    expect(find.text('Yönetici Paneli (Taslak)'), findsNothing);
+    expect(find.byType(AdminPanelScreen), findsNothing);
   });
 
   testWidgets('Rol kontrolü bitince kullanıcının Profil sekmesi korunur', (
