@@ -9,6 +9,8 @@ import 'package:fixcampus_mobile/screens/auth/login_screen.dart';
 import 'package:fixcampus_mobile/screens/auth/register_screen.dart';
 import 'package:fixcampus_mobile/screens/profile/profile_screen.dart';
 import 'package:fixcampus_mobile/widgets/auth_guard.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fixcampus_mobile/services/local_profile_storage.dart';
 import 'auth_provider_test.dart' show FakeAuthService;
 
 void main() {
@@ -16,6 +18,8 @@ void main() {
   late FakeAuthService service;
   late AuthProvider auth;
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    LocalProfileStorage.resetMemoryForTest();
     service = FakeAuthService();
     auth = AuthProvider(service: service);
   });

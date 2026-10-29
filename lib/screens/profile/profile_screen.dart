@@ -443,6 +443,7 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: _bolum,
                 decoration: const InputDecoration(labelText: 'Bölüm'),
                 items: _bolumler
@@ -454,6 +455,7 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: _sinif,
                 decoration: const InputDecoration(labelText: 'Sınıf'),
                 items: _siniflar

@@ -4,15 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../services/auth_service.dart';
+import '../services/local_profile_storage.dart';
 
 /// Kimlik Doğrulama, Kullanıcı Oturum ve Rol Yönetimi Sağlayıcısı
 class AuthProvider extends ChangeNotifier {
-  AuthProvider({AuthService? service}) : _service = service {
+  AuthProvider({
+    AuthService? service,
+    LocalProfileStorage? storage,
+  })  : _service = service,
+        _storage = storage ?? const LocalProfileStorage() {
     _subscription = service?.changes.listen(
       (_) {
         if (_isLoading) return; // İşlemin son durumunu tek yerde uygula.
         if (!service.hasSession) {
           _currentUser = null;
+          _cachedBolum = null;
+          _cachedSinif = null;
           _message = null;
           _hasSessionError = false;
           notifyListeners();
@@ -30,6 +37,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   final AuthService? _service;
+  final LocalProfileStorage _storage;
   StreamSubscription<void>? _subscription;
   Profil? _currentUser;
   bool _isLoading = false;
@@ -37,7 +45,7 @@ class AuthProvider extends ChangeNotifier {
   String? _message;
   bool _hasSessionError = false;
 
-  // Yerel hafızada tutulan bölüm ve sınıf (backend profili desteklemediğinde arayüzde korumak için)
+  // Aktif oturum için hafızada tutulan bölüm ve sınıf
   String? _cachedBolum;
   String? _cachedSinif;
 
@@ -105,6 +113,8 @@ class AuthProvider extends ChangeNotifier {
       if (sessionOperation) _hasSessionError = !succeeded;
       if (!service.hasSession) {
         _currentUser = null;
+        _cachedBolum = null;
+        _cachedSinif = null;
         _hasSessionError = false;
       }
       _isLoading = false;
@@ -116,12 +126,51 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> initialize() => _run((s) async {
         final profile = s.hasSession ? await s.loadProfile() : null;
         if (profile != null) {
+          final userId = profile.id;
+          final savedBolum = await _storage.getBolum(userId);
+          final savedSinif = await _storage.getSinif(userId);
+
+          // GET'ten gelen sunucu değerleri öncelikli kullanılır
+          final serverBolum =
+              (profile.bolum != null && profile.bolum!.trim().isNotEmpty)
+                  ? profile.bolum!.trim()
+                  : null;
+          final serverSinif =
+              (profile.sinif != null && profile.sinif!.trim().isNotEmpty)
+                  ? profile.sinif!.trim()
+                  : null;
+
+          final finalBolum = serverBolum ??
+              savedBolum ??
+              _cachedBolum ??
+              (profile.rol == KullaniciRolu.yonetici
+                  ? 'Rektörlük / Yönetim'
+                  : 'Bilgisayar Mühendisliği');
+
+          final finalSinif = serverSinif ??
+              savedSinif ??
+              _cachedSinif ??
+              (profile.rol == KullaniciRolu.yonetici ? '-' : '4. Sınıf');
+
+          if (savedBolum != finalBolum || savedSinif != finalSinif) {
+            await _storage.saveAcademicInfo(
+              userId,
+              bolum: finalBolum,
+              sinif: finalSinif,
+            );
+          }
+
+          _cachedBolum = finalBolum;
+          _cachedSinif = finalSinif;
+
           _currentUser = profile.copyWith(
-            bolum: profile.bolum ?? _cachedBolum ?? 'Bilgisayar Mühendisliği',
-            sinif: profile.sinif ?? _cachedSinif ?? '4. Sınıf',
+            bolum: finalBolum,
+            sinif: finalSinif,
           );
         } else {
           _currentUser = null;
+          _cachedBolum = null;
+          _cachedSinif = null;
         }
       });
 
@@ -131,12 +180,47 @@ class AuthProvider extends ChangeNotifier {
     bool asAdmin = false,
   }) =>
       _run((s) async {
+        // Yeni oturum öncesi önceki hesaptan kalan hafızayı temizle
         _currentUser = null;
+        _cachedBolum = null;
+        _cachedSinif = null;
+
         await s.signIn(email.trim(), password);
         final profile = await s.loadProfile();
+        final userId = profile.id;
+
+        final savedBolum = await _storage.getBolum(userId);
+        final savedSinif = await _storage.getSinif(userId);
+
+        // GET'ten gelen sunucu değerleri öncelikli kullanılır
+        final serverBolum =
+            (profile.bolum != null && profile.bolum!.trim().isNotEmpty)
+                ? profile.bolum!.trim()
+                : null;
+        final serverSinif =
+            (profile.sinif != null && profile.sinif!.trim().isNotEmpty)
+                ? profile.sinif!.trim()
+                : null;
+
+        final finalBolum = serverBolum ??
+            savedBolum ??
+            (asAdmin ? 'Rektörlük / Yönetim' : 'Bilgisayar Mühendisliği');
+        final finalSinif = serverSinif ??
+            savedSinif ??
+            (asAdmin ? '-' : '4. Sınıf');
+
+        await _storage.saveAcademicInfo(
+          userId,
+          bolum: finalBolum,
+          sinif: finalSinif,
+        );
+
+        _cachedBolum = finalBolum;
+        _cachedSinif = finalSinif;
+
         _currentUser = profile.copyWith(
-          bolum: profile.bolum ?? _cachedBolum ?? (asAdmin ? 'Rektörlük / Yönetim' : 'Bilgisayar Mühendisliği'),
-          sinif: profile.sinif ?? _cachedSinif ?? (asAdmin ? '-' : '4. Sınıf'),
+          bolum: finalBolum,
+          sinif: finalSinif,
         );
       });
 
@@ -147,17 +231,50 @@ class AuthProvider extends ChangeNotifier {
     String? bolum,
     String? sinif,
   }) {
-    if (bolum != null) _cachedBolum = bolum.trim();
-    if (sinif != null) _cachedSinif = sinif.trim();
+    final selectedBolum =
+        (bolum != null && bolum.trim().isNotEmpty) ? bolum.trim() : null;
+    final selectedSinif =
+        (sinif != null && sinif.trim().isNotEmpty) ? sinif.trim() : null;
+
+    // Önceki hesaptan kalan bilgileri temizle
+    _cachedBolum = null;
+    _cachedSinif = null;
 
     return _run((s) async {
       _currentUser = null;
       await s.signUp(adSoyad.trim(), email.trim(), password);
       if (s.hasSession) {
-        final profile = await s.saveProfile(adSoyad.trim());
+        final profile = await s.saveProfile(
+          adSoyad.trim(),
+          bolum: selectedBolum,
+          sinif: selectedSinif,
+        );
+        final userId = profile.id;
+
+        final serverBolum =
+            (profile.bolum != null && profile.bolum!.trim().isNotEmpty)
+                ? profile.bolum!.trim()
+                : null;
+        final serverSinif =
+            (profile.sinif != null && profile.sinif!.trim().isNotEmpty)
+                ? profile.sinif!.trim()
+                : null;
+
+        final finalBolum = serverBolum ?? selectedBolum ?? 'Bilgisayar Mühendisliği';
+        final finalSinif = serverSinif ?? selectedSinif ?? '1. Sınıf';
+
+        await _storage.saveAcademicInfo(
+          userId,
+          bolum: finalBolum,
+          sinif: finalSinif,
+        );
+
+        _cachedBolum = finalBolum;
+        _cachedSinif = finalSinif;
+
         _currentUser = profile.copyWith(
-          bolum: _cachedBolum ?? 'Bilgisayar Mühendisliği',
-          sinif: _cachedSinif ?? '1. Sınıf',
+          bolum: finalBolum,
+          sinif: finalSinif,
         );
       } else {
         _message = 'Hesap oluşturuldu. E-postanızı onaylayıp giriş yapın.';
@@ -176,14 +293,56 @@ class AuthProvider extends ChangeNotifier {
       _notify();
       return false;
     }
-    if (bolum != null) _cachedBolum = bolum.trim();
-    if (sinif != null) _cachedSinif = sinif.trim();
+
+    final targetBolum = (bolum != null && bolum.trim().isNotEmpty)
+        ? bolum.trim()
+        : _cachedBolum ?? _currentUser?.bolum;
+    final targetSinif = (sinif != null && sinif.trim().isNotEmpty)
+        ? sinif.trim()
+        : _cachedSinif ?? _currentUser?.sinif;
 
     return _run((s) async {
-      final updated = await s.saveProfile(trimmed);
+      // PUT /api/profil isteğine adSoyad yanında bolum ve sinif de gönderilsin
+      final updated = await s.saveProfile(
+        trimmed,
+        bolum: targetBolum,
+        sinif: targetSinif,
+      );
+      final userId = updated.id;
+
+      // Sunucudan (GET/PUT yanıtından) dönen değerler önceliklidir
+      final serverBolum =
+          (updated.bolum != null && updated.bolum!.trim().isNotEmpty)
+              ? updated.bolum!.trim()
+              : null;
+      final serverSinif =
+          (updated.sinif != null && updated.sinif!.trim().isNotEmpty)
+              ? updated.sinif!.trim()
+              : null;
+
+      final finalBolum = serverBolum ??
+          targetBolum ??
+          _cachedBolum ??
+          _currentUser?.bolum ??
+          'Bilgisayar Mühendisliği';
+      final finalSinif = serverSinif ??
+          targetSinif ??
+          _cachedSinif ??
+          _currentUser?.sinif ??
+          '4. Sınıf';
+
+      await _storage.saveAcademicInfo(
+        userId,
+        bolum: finalBolum,
+        sinif: finalSinif,
+      );
+
+      _cachedBolum = finalBolum;
+      _cachedSinif = finalSinif;
+
       _currentUser = updated.copyWith(
-        bolum: _cachedBolum ?? _currentUser?.bolum ?? 'Bilgisayar Mühendisliği',
-        sinif: _cachedSinif ?? _currentUser?.sinif ?? '4. Sınıf',
+        bolum: finalBolum,
+        sinif: finalSinif,
       );
     }, sessionOperation: false);
   }
@@ -204,7 +363,9 @@ class AuthProvider extends ChangeNotifier {
 
     _currentUser = _currentUser!.copyWith(
       rol: newRole,
-      bolum: newRole == KullaniciRolu.yonetici ? 'Rektörlük / Yönetim' : (_cachedBolum ?? 'Bilgisayar Mühendisliği'),
+      bolum: newRole == KullaniciRolu.yonetici
+          ? 'Rektörlük / Yönetim'
+          : (_cachedBolum ?? 'Bilgisayar Mühendisliği'),
       sinif: newRole == KullaniciRolu.yonetici ? '-' : (_cachedSinif ?? '4. Sınıf'),
     );
     notifyListeners();
@@ -213,6 +374,8 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> logout() => _run((s) async {
         await s.signOut();
         _currentUser = null;
+        _cachedBolum = null;
+        _cachedSinif = null;
       });
 
   @override

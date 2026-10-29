@@ -87,12 +87,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (success && auth.isLoggedIn) {
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.main, (_) => false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.message ?? 'İşlem tamamlanamadı.'),
-        ),
-      );
     }
   }
 
@@ -313,6 +307,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
                           initialValue: _secilenSinif,
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(

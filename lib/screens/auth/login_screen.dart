@@ -59,12 +59,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success && auth.isLoggedIn) {
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.main, (_) => false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.message ?? 'İşlem tamamlanamadı.'),
-        ),
-      );
     }
   }
 

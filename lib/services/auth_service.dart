@@ -14,7 +14,11 @@ abstract class AuthService {
   Future<void> signUp(String name, String email, String password);
   Future<void> signOut();
   Future<Profil> loadProfile();
-  Future<Profil> saveProfile(String name);
+  Future<Profil> saveProfile(
+    String name, {
+    String? bolum,
+    String? sinif,
+  });
 }
 
 class ApiAuthService implements AuthService {
@@ -62,21 +66,36 @@ class ApiAuthService implements AuthService {
       // E-posta onayından sonraki ilk girişte profil henüz oluşmamış olabilir.
       final metadata = client.auth.currentUser?.userMetadata;
       final name = metadata?['ad_soyad'] ?? metadata?['adSoyad'];
+      final bolum = metadata?['bolum'] as String?;
+      final sinif = metadata?['sinif'] as String?;
       if (e.response?.statusCode == 404 &&
           name is String &&
           name.trim().length >= 2 &&
           name.trim().length <= 100) {
-        return saveProfile(name.trim());
+        return saveProfile(name.trim(), bolum: bolum, sinif: sinif);
       }
       rethrow;
     }
   }
 
   @override
-  Future<Profil> saveProfile(String name) async {
+  Future<Profil> saveProfile(
+    String name, {
+    String? bolum,
+    String? sinif,
+  }) async {
+    final body = <String, dynamic>{
+      'adSoyad': name,
+    };
+    if (bolum != null && bolum.trim().isNotEmpty) {
+      body['bolum'] = bolum.trim();
+    }
+    if (sinif != null && sinif.trim().isNotEmpty) {
+      body['sinif'] = sinif.trim();
+    }
     final response = await api.dio.put<Map<String, dynamic>>(
       '/api/profil',
-      data: {'adSoyad': name},
+      data: body,
     );
     return Profil.fromJson(response.data!);
   }

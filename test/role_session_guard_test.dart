@@ -11,7 +11,9 @@ import 'package:fixcampus_mobile/routes/app_routes.dart';
 import 'package:fixcampus_mobile/screens/admin/admin_panel_screen.dart';
 import 'package:fixcampus_mobile/screens/auth/login_screen.dart';
 import 'package:fixcampus_mobile/services/auth_service.dart';
+import 'package:fixcampus_mobile/services/local_profile_storage.dart';
 import 'package:fixcampus_mobile/widgets/role_session_guard.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RoleTestService implements AuthService {
   @override
@@ -41,7 +43,12 @@ class RoleTestService implements AuthService {
   }
 
   @override
-  Future<Profil> saveProfile(String name) => loadProfile();
+  Future<Profil> saveProfile(
+    String name, {
+    String? bolum,
+    String? sinif,
+  }) =>
+      loadProfile();
   @override
   Future<void> signIn(String email, String password) async {
     hasSession = true;
@@ -65,6 +72,8 @@ void main() {
   late AuthProvider auth;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    LocalProfileStorage.resetMemoryForTest();
     service = RoleTestService();
     auth = AuthProvider(service: service);
   });

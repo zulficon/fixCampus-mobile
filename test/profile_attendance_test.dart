@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:fixcampus_mobile/providers/auth_provider.dart';
 import 'auth_provider_test.dart' show FakeAuthService;
 import 'package:fixcampus_mobile/providers/listings_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fixcampus_mobile/screens/profile/profile_screen.dart';
 import 'package:fixcampus_mobile/widgets/listing_card.dart';
 
@@ -16,6 +17,7 @@ void main() {
   testWidgets(
       'Profil ekranında ListingCard katılımcı sayısını ve durumunu Provider dan alır',
       (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
     final authProvider =
         AuthProvider(service: FakeAuthService()..hasSession = true);
     await authProvider.initialize();
