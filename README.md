@@ -22,6 +22,14 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
   uygulamaya dönüşte rol yenileme ve oturum kaybında korunan içeriği kapatma.
   Rol doğrulaması sırasında mevcut sekme durumu korunur.
 
+### Üçüncü hafta
+
+- **Zülfikar Durak:** Ortak ilan alan doğrulaması, ilan oluşturma formunda
+  zorunlu alan ve kategori/tür kontrolü, tür değişiminde kategori temizleme,
+  doğrulanmış oturum kontrolü ve düzenleme/silme için sahiplik politikası.
+  İlan API işlemleri ve düzenleme/silme ekranlarının bu politikaya bağlantısı
+  henüz tamamlanmamıştır.
+
 ## Uygulama ekranları
 
 - Açılış ve oturum durumuna göre yönlendirme.
@@ -72,6 +80,7 @@ flutter build apk --debug
 - [API servisleri](docs/hafta-01-api-servisi.md)
 - [Giriş ve profil](docs/hafta-02-auth-profil.md)
 - [Rol ve oturum kontrolü](docs/hafta-02-rol-ve-oturum.md)
+- [İlan doğrulama ve sahiplik](docs/hafta-03-ilan-dogrulama.md)
 
 ## Ekip
 
