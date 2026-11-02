@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/network/api_client.dart';
 import 'core/network/web_api_auth_client.dart';
 import 'services/auth_service.dart';
+import 'services/listing_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/constants/app_constants.dart';
@@ -17,6 +18,7 @@ Future<void> main() async {
   const url = String.fromEnvironment('SUPABASE_URL');
   const key = String.fromEnvironment('SUPABASE_ANON_KEY');
   AuthService? service;
+  ListingService? listingService;
   if (url.isNotEmpty && key.isNotEmpty) {
     final authApi = WebApiAuthClient(
       apiBaseUrl: AppConstants.defaultApiBaseUrl,
@@ -28,19 +30,31 @@ Future<void> main() async {
       httpClient: authApi,
     );
     final client = Supabase.instance.client;
+    final apiClient = ApiClient(
+      tokenProvider: () => client.auth.currentSession?.accessToken,
+    );
     service = ApiAuthService(
       client,
-      ApiClient(tokenProvider: () => client.auth.currentSession?.accessToken),
+      apiClient,
       authApi,
     );
+    listingService = ApiListingService(apiClient);
   }
-  runApp(FixCampusApp(authService: service));
+  runApp(FixCampusApp(
+    authService: service,
+    listingService: listingService,
+  ));
 }
 
 /// fixCampus Mobil Uygulama Kök Bileşeni (Android Telefon Çerçevesi Destekli)
 class FixCampusApp extends StatelessWidget {
-  const FixCampusApp({super.key, this.authService});
+  const FixCampusApp({
+    super.key,
+    this.authService,
+    this.listingService,
+  });
   final AuthService? authService;
+  final ListingService? listingService;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +63,9 @@ class FixCampusApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AuthProvider(service: authService),
         ),
-        ChangeNotifierProvider(create: (_) => ListingsProvider()),
+        ChangeNotifierProvider(
+          create: (_) => ListingsProvider(service: listingService),
+        ),
       ],
       child: MaterialApp(
         title: AppConstants.appName,

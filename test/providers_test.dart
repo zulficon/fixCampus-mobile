@@ -74,6 +74,53 @@ void main() {
       final resolved = provider.ilanlar.firstWhere((i) => i.id == ilanId);
       expect(resolved.durum, IlanDurumu.cozuldu);
     });
+
+    test('3. Hafta CRUD: createListing yeni ilanı listeye eklemeli', () async {
+      final initialCount = provider.ilanlar.length;
+      final created = await provider.createListing(
+        baslik: 'Yeni Provider İlanı',
+        aciklama: 'Açıklama metni en az beş karakter',
+        kategoriId: 'kat-1',
+        tur: IlanTuru.sosyal,
+        yer: 'Kampüs Meydanı',
+        bulusmaTarihi: DateTime.now().add(const Duration(days: 2)),
+        sahipId: '00000000-0000-0000-0000-000000000001',
+      );
+
+      expect(created, isNotNull);
+      expect(provider.ilanlar.length, initialCount + 1);
+      expect(provider.ilanlar.first.baslik, 'Yeni Provider İlanı');
+      expect(provider.getListingById(created!.id), isNotNull);
+    });
+
+    test('3. Hafta CRUD: updateListing mevcut ilanı güncellemeli', () async {
+      const targetId = 'ilan-1';
+      final updated = await provider.updateListing(
+        id: targetId,
+        baslik: 'Güncellenmiş Algoritma Çalışması',
+        aciklama: 'Güncellenen açıklama metni...',
+        kategoriId: 'kat-2',
+        tur: IlanTuru.sosyal,
+        yer: 'Yeni Kütüphane Katı',
+        bulusmaTarihi: DateTime.now().add(const Duration(days: 3)),
+      );
+
+      expect(updated, isNotNull);
+      final found = provider.getListingById(targetId);
+      expect(found?.baslik, 'Güncellenmiş Algoritma Çalışması');
+      expect(found?.yer, 'Yeni Kütüphane Katı');
+    });
+
+    test('3. Hafta CRUD: deleteListing ilanı ve katılımlarını silmeli', () async {
+      const targetId = 'ilan-1';
+      expect(provider.getListingById(targetId), isNotNull);
+      expect(provider.getAttendanceCount(targetId), greaterThan(0));
+
+      final result = await provider.deleteListing(targetId);
+      expect(result, isTrue);
+      expect(provider.getListingById(targetId), isNull);
+      expect(provider.getAttendanceCount(targetId), 0);
+    });
   });
 }
 

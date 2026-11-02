@@ -18,9 +18,24 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
 
 - **Berna Kalkan:** Supabase SDK ile giriş, kayıt ve çıkış; oturum saklama ve
   yenileme; Web API üzerinden profil okuma ve ad soyad güncelleme.
+- **Berke Mahmut Acar:** Giriş ve kayıt formları (`LoginScreen`, `RegisterScreen`),
+  form validasyonları, şifre gizle/göster ve profil bölüm/sınıf yönetimi.
 - **Zülfikar Durak:** Öğrenci/yönetici ekran erişimi, profil doğrulama,
   uygulamaya dönüşte rol yenileme ve oturum kaybında korunan içeriği kapatma.
   Rol doğrulaması sırasında mevcut sekme durumu korunur.
+
+### Üçüncü hafta
+
+- **Berke Mahmut Acar:** İlan verme formu (`CreateListingScreen`), zengin detay
+  görünümü (`ListingDetailScreen`), ilan düzenleme ekranı (`EditListingScreen`),
+  silme onay iletişim kutusu (`AlertDialog`), DatePicker ve TimePicker ile buluşma
+  tarihi/saati seçimi ve `AppRoutes.editListing` rotası.
+- **Berna Kalkan:** CRUD API servis katmanı (`ListingService`, `ApiListingService`),
+  `ApiClient` üzerinden JWT Bearer token ile uç nokta haberleşmesi ve
+  `ListingsProvider` durum yönetimi katmanı.
+- **Zülfikar Durak:** `ListingValidator` alan doğrulama kuralları (başlık 3-150,
+  açıklama 5-3000, yer 2-200), Sosyal için gelecek tarih zorunluluğu, Kayıp/Buluntu
+  için tarih kısıtlaması, kategori-tür eşleşmesi ve sahiplik/yönetici yetki denetimi.
 
 ## Uygulama ekranları
 
@@ -28,12 +43,11 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
 - Giriş ve kayıt.
 - Sosyal Radar ve kategori filtreleri.
 - Kayıp-Buluntu ve ilan türü filtreleri.
-- İlan detay görünümü ve ilan verme formu taslağı.
+- İlan detay görünümü, düzenleme ve silme aksiyonları.
+- Dinamik tür, kategori ve tarih/saat seçimli yeni ilan verme formu.
+- İlan düzenleme formu ve yetki denetimi.
 - Profil bilgileri, ad soyad düzenleme, İlanlarım ve çıkış.
-- Yönetici paneli taslağı ve rol kontrollü rota erişimi.
-
-İlan ekranları `ListingsProvider` içindeki demo verileri kullanır. İlan verme,
-katılım ve şikâyet düğmeleri ilk hafta ekran iskeletinin parçalarıdır.
+- Yönetici paneli ve rol kontrollü rota erişimi.
 
 ## Çalıştırma
 
@@ -63,7 +77,7 @@ flutter test --reporter expanded
 flutter build apk --debug
 ```
 
-26 Ekim 2026 doğrulamasında 69 test geçti ve Android debug APK derlendi.
+3. Hafta doğrulamasında 106 test geçti, `flutter analyze` 0 uyarı/hata verdi ve model doğrulama programı başarılı oldu.
 
 ## Teknik belgeler
 
@@ -72,6 +86,7 @@ flutter build apk --debug
 - [API servisleri](docs/hafta-01-api-servisi.md)
 - [Giriş ve profil](docs/hafta-02-auth-profil.md)
 - [Rol ve oturum kontrolü](docs/hafta-02-rol-ve-oturum.md)
+- [İlan CRUD ve sayfaları](docs/hafta-03-ilan-crud-ve-sayfalari.md)
 
 ## Ekip
 

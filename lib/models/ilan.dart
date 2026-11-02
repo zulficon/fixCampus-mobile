@@ -52,4 +52,32 @@ class Ilan {
         'durum': durum.apiValue,
         'olusturulmaTarihi': olusturulmaTarihi.toUtc().toIso8601String(),
       };
+
+  Ilan copyWith({
+    String? id,
+    String? sahipId,
+    String? kategoriId,
+    String? baslik,
+    String? aciklama,
+    IlanTuru? tur,
+    String? yer,
+    DateTime? bulusmaTarihi,
+    bool clearBulusmaTarihi = false,
+    IlanDurumu? durum,
+    DateTime? olusturulmaTarihi,
+  }) =>
+      Ilan(
+        id: id ?? this.id,
+        sahipId: sahipId ?? this.sahipId,
+        kategoriId: kategoriId ?? this.kategoriId,
+        baslik: baslik ?? this.baslik,
+        aciklama: aciklama ?? this.aciklama,
+        tur: tur ?? this.tur,
+        yer: yer ?? this.yer,
+        bulusmaTarihi: clearBulusmaTarihi
+            ? null
+            : (bulusmaTarihi ?? this.bulusmaTarihi),
+        durum: durum ?? this.durum,
+        olusturulmaTarihi: olusturulmaTarihi ?? this.olusturulmaTarihi,
+      );
 }

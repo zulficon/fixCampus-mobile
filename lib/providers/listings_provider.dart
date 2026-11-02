@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../services/listing_service.dart';
 
-/// İlanlar, Filtreleme ve Katılım Yönetimi Sağlayıcısı
+/// İlanlar, Filtreleme, CRUD ve Katılım Yönetimi Sağlayıcısı
 class ListingsProvider extends ChangeNotifier {
-  ListingsProvider() {
+  ListingsProvider({ListingService? service}) : _service = service {
     _initSampleData();
   }
 
+  final ListingService? _service;
   final List<Kategori> _kategoriler = [];
   final List<Ilan> _ilanlar = [];
   final List<Katilim> _katilimlar = [];
 
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
   List<Kategori> get kategoriler => List.unmodifiable(_kategoriler);
   List<Ilan> get ilanlar => List.unmodifiable(_ilanlar);
   List<Katilim> get katilimlar => List.unmodifiable(_katilimlar);
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
 
   /// Sosyal Radar ilanları (yalnızca Sosyal türündeki aktif buluşmalar)
   List<Ilan> get radarListings {
@@ -25,7 +37,8 @@ class ListingsProvider extends ChangeNotifier {
   /// Kayıp & Buluntu ilanları
   List<Ilan> getLostFoundListings({IlanTuru? turFilter}) {
     return _ilanlar.where((i) {
-      final isLostOrFound = i.tur == IlanTuru.kayip || i.tur == IlanTuru.buluntu;
+      final isLostOrFound =
+          i.tur == IlanTuru.kayip || i.tur == IlanTuru.buluntu;
       if (!isLostOrFound) return false;
       if (turFilter != null && i.tur != turFilter) return false;
       return true;
@@ -35,6 +48,15 @@ class ListingsProvider extends ChangeNotifier {
   /// Belirli bir kullanıcının ilanları
   List<Ilan> getUserListings(String userId) {
     return _ilanlar.where((i) => i.sahipId == userId).toList();
+  }
+
+  /// Kimliğe göre tek ilan bulma
+  Ilan? getListingById(String id) {
+    try {
+      return _ilanlar.firstWhere((i) => i.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Kullanıcının bu buluşmaya katılıp katılmadığı
@@ -47,10 +69,188 @@ class ListingsProvider extends ChangeNotifier {
     return _katilimlar.where((k) => k.ilanId == ilanId).length;
   }
 
-  /// Yeni İlan Ekleme
+  /// Sunucudan ilanları çekme
+  Future<void> fetchListings({
+    IlanTuru? tur,
+    String? kategoriId,
+    String? query,
+  }) async {
+    if (_service == null) return;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final remoteListings = await _service.getListings(
+        tur: tur,
+        kategoriId: kategoriId,
+        query: query,
+      );
+      if (remoteListings.isNotEmpty) {
+        _ilanlar.clear();
+        _ilanlar.addAll(remoteListings);
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Sunucudan kategorileri çekme
+  Future<void> fetchCategories({IlanTuru? tur}) async {
+    if (_service == null) return;
+    try {
+      final remoteCategories = await _service.getCategories(tur: tur);
+      if (remoteCategories.isNotEmpty) {
+        _kategoriler.clear();
+        _kategoriler.addAll(remoteCategories);
+        notifyListeners();
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Yeni İlan Ekleme (Hafta 1 uyumluluğu için senkron ekleme)
   void addListing(Ilan yeniIlan) {
+    _ilanlar.removeWhere((i) => i.id == yeniIlan.id);
     _ilanlar.insert(0, yeniIlan);
     notifyListeners();
+  }
+
+  /// Yeni İlan Oluşturma (CRUD API ve Yerel Durum Entegrasyonu)
+  Future<Ilan?> createListing({
+    required String baslik,
+    required String aciklama,
+    required String kategoriId,
+    required IlanTuru tur,
+    required String yer,
+    DateTime? bulusmaTarihi,
+    required String sahipId,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      Ilan created;
+      if (_service != null) {
+        created = await _service.createListing(
+          baslik: baslik,
+          aciklama: aciklama,
+          kategoriId: kategoriId,
+          tur: tur,
+          yer: yer,
+          bulusmaTarihi: bulusmaTarihi,
+        );
+      } else {
+        // Çevrimdışı / Mock Modu
+        final now = DateTime.now().toUtc();
+        created = Ilan(
+          id: 'ilan-${DateTime.now().millisecondsSinceEpoch}',
+          sahipId: sahipId,
+          kategoriId: kategoriId,
+          baslik: baslik.trim(),
+          aciklama: aciklama.trim(),
+          tur: tur,
+          yer: yer.trim(),
+          bulusmaTarihi: bulusmaTarihi?.toUtc(),
+          durum: IlanDurumu.aktif,
+          olusturulmaTarihi: now,
+        );
+      }
+
+      _ilanlar.insert(0, created);
+      return created;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// İlan Güncelleme (CRUD API ve Yerel Durum Entegrasyonu)
+  Future<Ilan?> updateListing({
+    required String id,
+    required String baslik,
+    required String aciklama,
+    required String kategoriId,
+    required IlanTuru tur,
+    required String yer,
+    DateTime? bulusmaTarihi,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      Ilan updated;
+      if (_service != null) {
+        updated = await _service.updateListing(
+          id,
+          baslik: baslik,
+          aciklama: aciklama,
+          kategoriId: kategoriId,
+          tur: tur,
+          yer: yer,
+          bulusmaTarihi: bulusmaTarihi,
+        );
+      } else {
+        final existingIndex = _ilanlar.indexWhere((i) => i.id == id);
+        if (existingIndex == -1) {
+          throw Exception('Güncellenecek ilan bulunamadı.');
+        }
+        final old = _ilanlar[existingIndex];
+        updated = old.copyWith(
+          baslik: baslik.trim(),
+          aciklama: aciklama.trim(),
+          kategoriId: kategoriId,
+          tur: tur,
+          yer: yer.trim(),
+          bulusmaTarihi: bulusmaTarihi?.toUtc(),
+          clearBulusmaTarihi: bulusmaTarihi == null,
+        );
+      }
+
+      final index = _ilanlar.indexWhere((i) => i.id == id);
+      if (index != -1) {
+        _ilanlar[index] = updated;
+      }
+      return updated;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// İlan Silme (CRUD API ve Yerel Durum Entegrasyonu)
+  Future<bool> deleteListing(String id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      if (_service != null) {
+        await _service.deleteListing(id);
+      }
+      _ilanlar.removeWhere((i) => i.id == id);
+      _katilimlar.removeWhere((k) => k.ilanId == id);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   /// Sosyal Buluşmaya Katılma / Katılımı Geri Alma ("Geliyorum")
@@ -81,18 +281,7 @@ class ListingsProvider extends ChangeNotifier {
     final index = _ilanlar.indexWhere((i) => i.id == ilanId);
     if (index != -1) {
       final old = _ilanlar[index];
-      _ilanlar[index] = Ilan(
-        id: old.id,
-        sahipId: old.sahipId,
-        kategoriId: old.kategoriId,
-        baslik: old.baslik,
-        aciklama: old.aciklama,
-        tur: old.tur,
-        yer: old.yer,
-        bulusmaTarihi: old.bulusmaTarihi,
-        durum: IlanDurumu.cozuldu,
-        olusturulmaTarihi: old.olusturulmaTarihi,
-      );
+      _ilanlar[index] = old.copyWith(durum: IlanDurumu.cozuldu);
       notifyListeners();
     }
   }
@@ -116,7 +305,8 @@ class ListingsProvider extends ChangeNotifier {
         sahipId: '00000000-0000-0000-0000-000000000001',
         kategoriId: 'kat-2',
         baslik: 'Merkez Kütüphanede Algoritma Vize Çalışması',
-        aciklama: 'BLM4587 ve algoritma dersi için kütüphane B blok 2. katta birlikte soru çözeceğiz.',
+        aciklama:
+            'BLM4587 ve algoritma dersi için kütüphane B blok 2. katta birlikte soru çözeceğiz.',
         tur: IlanTuru.sosyal,
         yer: 'Merkez Kütüphane B Blok 2. Kat',
         bulusmaTarihi: now.add(const Duration(days: 1, hours: 2)),
@@ -128,7 +318,8 @@ class ListingsProvider extends ChangeNotifier {
         sahipId: '00000000-0000-0000-0000-000000000003',
         kategoriId: 'kat-1',
         baslik: 'Kampüs Açık Sahada Voleybol Maçı',
-        aciklama: 'Saat 17.00 sahada 2 kişi eksiğimiz var, katılmak isteyen herkes gelebilir!',
+        aciklama:
+            'Saat 17.00 sahada 2 kişi eksiğimiz var, katılmak isteyen herkes gelebilir!',
         tur: IlanTuru.sosyal,
         yer: 'Spor Tesisleri Açık Voleybol Sahası',
         bulusmaTarihi: now.add(const Duration(hours: 18)),
@@ -140,7 +331,8 @@ class ListingsProvider extends ChangeNotifier {
         sahipId: '00000000-0000-0000-0000-000000000004',
         kategoriId: 'kat-3',
         baslik: 'Mühendislik Kantininde Kahve & Sohbet',
-        aciklama: 'Ders arası kahve içip mobil proje fikirleri tartışıyoruz.',
+        aciklama:
+            'Ders arası kahve içip mobil proje fikirleri tartışıyoruz.',
         tur: IlanTuru.sosyal,
         yer: 'Mühendislik Fakültesi Zemin Kat Kantin',
         bulusmaTarihi: now.add(const Duration(hours: 4)),
@@ -154,7 +346,8 @@ class ListingsProvider extends ChangeNotifier {
         sahipId: '00000000-0000-0000-0000-000000000005',
         kategoriId: 'kat-4',
         baslik: 'Siyah Kablosuz Kulaklık Kutusu Kayıp',
-        aciklama: 'D204 nolu amfide masada unuttum, üzerinde gri çıkartma var. Görenlerin yazmasını rica ederim.',
+        aciklama:
+            'D204 nolu amfide masada unuttum, üzerinde gri çıkartma var. Görenlerin yazmasını rica ederim.',
         tur: IlanTuru.kayip,
         yer: 'Mühendislik D204 Amfisi',
         bulusmaTarihi: null,
@@ -166,7 +359,8 @@ class ListingsProvider extends ChangeNotifier {
         sahipId: '00000000-0000-0000-0000-000000000001',
         kategoriId: 'kat-5',
         baslik: 'Yemekhanede Bulunan Öğrenci Kimlik Kartı',
-        aciklama: '1. kat turnikelerin hemen yanında bulundu, yemekhane danışmasına teslim edildi.',
+        aciklama:
+            '1. kat turnikelerin hemen yanında bulundu, yemekhane danışmasına teslim edildi.',
         tur: IlanTuru.buluntu,
         yer: 'Merkez Yemekhane Turnikeleri',
         bulusmaTarihi: null,
@@ -178,7 +372,8 @@ class ListingsProvider extends ChangeNotifier {
         sahipId: '00000000-0000-0000-0000-000000000006',
         kategoriId: 'kat-6',
         baslik: 'Mavi Spiral Defter ve Kalemlik Kayıp',
-        aciklama: 'Kütüphane girişindeki dinlenme koltuklarında unutulmuştur.',
+        aciklama:
+            'Kütüphane girişindeki dinlenme koltuklarında unutulmuştur.',
         tur: IlanTuru.kayip,
         yer: 'Merkez Kütüphane Giriş Holü',
         bulusmaTarihi: null,
