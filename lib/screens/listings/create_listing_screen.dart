@@ -112,12 +112,14 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
         _baslik.clear();
         _aciklama.clear();
         _yer.clear();
+        // Dropdown reset'i eski onChanged değerini geri çağırabilir.
+        // Önce alanları sıfırla, ardından yeni ilan durumunu uygula.
+        _form.currentState!.reset();
         setState(() {
           _kategoriId = null;
           _tarih = null;
           _tur = IlanTuru.sosyal;
         });
-        _form.currentState!.reset();
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('İlan yayınlandı.')));
