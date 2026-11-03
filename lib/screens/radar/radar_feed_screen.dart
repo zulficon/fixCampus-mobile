@@ -7,6 +7,7 @@ import '../../routes/app_routes.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/listing_card.dart';
+import '../../widgets/listings_load_status.dart';
 
 /// Sadeleştirilmiş Sosyal Radar Akış Ekranı
 class RadarFeedScreen extends StatefulWidget {
@@ -35,86 +36,97 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
     }
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Sade Başlık
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Sosyal Radar',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF18181B),
-                      letterSpacing: -0.4,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await listingsProvider.load();
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: ListingsLoadStatus(provider: listingsProvider),
+            ),
+            // Sade Başlık
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Sosyal Radar',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF18181B),
+                        letterSpacing: -0.4,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Kampüsteki buluşma ve çalışma ilanları',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF71717A),
+                    SizedBox(height: 2),
+                    Text(
+                      'Kampüsteki buluşma ve çalışma ilanları',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF71717A)),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Kategori Filtreleme Çipleri
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 48,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                children: [
-                  CategoryChip(
-                    label: 'Tümü',
-                    isSelected: _selectedCategoryId == null,
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryId = null;
-                      });
-                    },
+            // Kategori Filtreleme Çipleri
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 48,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                  ...categories.map(
-                    (cat) => CategoryChip(
-                      label: cat.ad,
-                      isSelected: _selectedCategoryId == cat.id,
+                  children: [
+                    CategoryChip(
+                      label: 'Tümü',
+                      isSelected: _selectedCategoryId == null,
                       onTap: () {
                         setState(() {
-                          _selectedCategoryId =
-                              _selectedCategoryId == cat.id ? null : cat.id;
+                          _selectedCategoryId = null;
                         });
                       },
                     ),
-                  ),
-                ],
+                    ...categories.map(
+                      (cat) => CategoryChip(
+                        label: cat.ad,
+                        isSelected: _selectedCategoryId == cat.id,
+                        onTap: () {
+                          setState(() {
+                            _selectedCategoryId = _selectedCategoryId == cat.id
+                                ? null
+                                : cat.id;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // İlan Listesi
-          if (items.isEmpty)
-            const SliverFillRemaining(
-              child: EmptyState(
-                icon: Icons.event_busy_outlined,
-                title: 'Buluşma Bulunamadı',
-                description: 'Seçilen kategoride henüz aktif bir buluşma bulunmuyor.',
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.only(bottom: 24, top: 4),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
+            // İlan Listesi
+            if (items.isEmpty &&
+                !listingsProvider.isLoading &&
+                listingsProvider.error == null)
+              const SliverFillRemaining(
+                child: EmptyState(
+                  icon: Icons.event_busy_outlined,
+                  title: 'Buluşma Bulunamadı',
+                  description:
+                      'Seçilen kategoride henüz aktif bir buluşma bulunmuyor.',
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.only(bottom: 24, top: 4),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
                     final item = items[index];
                     final isAttending = listingsProvider.isUserAttending(
                       item.id,
@@ -134,12 +146,11 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
                         );
                       },
                     );
-                  },
-                  childCount: items.length,
+                  }, childCount: items.length),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

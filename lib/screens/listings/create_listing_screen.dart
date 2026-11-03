@@ -2,449 +2,297 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/listings_provider.dart';
-import '../../utils/listing_validator.dart';
+import '../../providers/auth_provider.dart';
+import '../../security/listing_access.dart';
+import '../../security/listing_mutation_policy.dart';
+import '../../security/role_session_policy.dart';
+import '../../validation/listing_validator.dart';
+import '../../services/api_exception.dart';
+import '../../services/listings_service.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/listings_load_status.dart';
 
-/// İlan Verme Form Ekranı (Sosyal Buluşma, Kayıp ve Buluntu)
+/// Mevcut ilan formunun ortak API'ye bağlanan oluşturma/düzenleme akışı.
 class CreateListingScreen extends StatefulWidget {
-  const CreateListingScreen({super.key});
+  const CreateListingScreen({super.key, this.ilan});
+  final Ilan? ilan;
 
   @override
   State<CreateListingScreen> createState() => _CreateListingScreenState();
 }
 
 class _CreateListingScreenState extends State<CreateListingScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _baslikController = TextEditingController();
-  final _yerController = TextEditingController();
-  final _aciklamaController = TextEditingController();
+  final _form = GlobalKey<FormState>();
+  late final TextEditingController _baslik;
+  late final TextEditingController _aciklama;
+  late final TextEditingController _yer;
+  late IlanTuru _tur;
+  String? _kategoriId;
+  DateTime? _tarih;
+  String? _error;
+  bool _saving = false;
+  static const _validator = ListingValidator();
 
-  IlanTuru _secilenTur = IlanTuru.sosyal;
-  String? _secilenKategoriId;
-  DateTime? _secilenTarih;
-  TimeOfDay? _secilenSaat;
-  bool _isSubmitting = false;
-  String? _tarihHatasi;
+  RoleAccess _access(AuthProvider auth) => listingAccess(
+    auth,
+    widget.ilan == null ? ListingMutation.create : ListingMutation.update,
+    listing: widget.ilan,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    final ilan = widget.ilan;
+    _baslik = TextEditingController(text: ilan?.baslik);
+    _aciklama = TextEditingController(text: ilan?.aciklama);
+    _yer = TextEditingController(text: ilan?.yer);
+    _tur = ilan?.tur ?? IlanTuru.sosyal;
+    _kategoriId = ilan?.kategoriId;
+    _tarih = ilan?.bulusmaTarihi?.toLocal();
+  }
 
   @override
   void dispose() {
-    _baslikController.dispose();
-    _yerController.dispose();
-    _aciklamaController.dispose();
+    _baslik.dispose();
+    _aciklama.dispose();
+    _yer.dispose();
     super.dispose();
   }
 
-  DateTime? get _bulusmaZamani {
-    if (_secilenTur != IlanTuru.sosyal || _secilenTarih == null) return null;
-    final time = _secilenSaat ?? const TimeOfDay(hour: 12, minute: 0);
-    return DateTime(
-      _secilenTarih!.year,
-      _secilenTarih!.month,
-      _secilenTarih!.day,
-      time.hour,
-      time.minute,
-    );
-  }
-
-  Future<void> _pickDate() async {
+  Future<void> _selectDate() async {
     final now = DateTime.now();
-    final pickedDate = await showDatePicker(
+    final first = DateTime(now.year, now.month, now.day);
+    final last = DateTime(now.year + 5, 12, 31);
+    final initial =
+        _tarih != null && !_tarih!.isBefore(first) && !_tarih!.isAfter(last)
+        ? _tarih!
+        : now;
+    final date = await showDatePicker(
       context: context,
-      initialDate: _secilenTarih ?? now.add(const Duration(days: 1)),
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
-      helpText: 'Buluşma Tarihi Seçin',
-      confirmText: 'İleri',
-      cancelText: 'İptal',
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
     );
-
-    if (pickedDate != null && mounted) {
-      final pickedTime = await showTimePicker(
-        context: context,
-        initialTime: _secilenSaat ?? const TimeOfDay(hour: 14, minute: 0),
-        helpText: 'Buluşma Saati Seçin',
-        confirmText: 'Seç',
-        cancelText: 'İptal',
-      );
-
-      setState(() {
-        _secilenTarih = pickedDate;
-        if (pickedTime != null) {
-          _secilenSaat = pickedTime;
-        }
-        _tarihHatasi = null;
-      });
-    }
-  }
-
-  Future<void> _submitForm() async {
-    setState(() {
-      _tarihHatasi = null;
-    });
-
-    final isFormValid = _formKey.currentState?.validate() ?? false;
-
-    if (_secilenTur == IlanTuru.sosyal) {
-      final dateError = ListingValidator.validateMeetingDate(
-        _bulusmaZamani,
-        _secilenTur,
-      );
-      if (dateError != null) {
-        setState(() {
-          _tarihHatasi = dateError;
-        });
-        return;
-      }
-    }
-
-    if (!isFormValid) return;
-
-    final auth = context.read<AuthProvider>();
-    final userId = auth.currentUser?.id ?? '00000000-0000-0000-0000-000000000001';
-
-    setState(() => _isSubmitting = true);
-
-    final listingsProvider = context.read<ListingsProvider>();
-    final created = await listingsProvider.createListing(
-      baslik: _baslikController.text,
-      aciklama: _aciklamaController.text,
-      kategoriId: _secilenKategoriId!,
-      tur: _secilenTur,
-      yer: _yerController.text,
-      bulusmaTarihi: _bulusmaZamani,
-      sahipId: userId,
+    if (!mounted || date == null) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
     );
-
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
-
-    if (created != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Color(0xFF18181B),
-          content: Text('İlanınız başarıyla oluşturuldu ve yayına alındı.'),
-        ),
-      );
-
-      // Formu sıfırla
-      _formKey.currentState?.reset();
-      _baslikController.clear();
-      _yerController.clear();
-      _aciklamaController.clear();
-      setState(() {
-        _secilenKategoriId = null;
-        _secilenTarih = null;
-        _secilenSaat = null;
-        _tarihHatasi = null;
-      });
-
-      // Eğer ayrı sayfadan açıldıysa geri dön
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-    } else {
-      final error = listingsProvider.errorMessage ?? 'İlan oluşturulamadı.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFFDC2626),
-          content: Text(error),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final listingsProvider = context.watch<ListingsProvider>();
-
-    // Seçilen türe uygun kategorileri filtrele
-    final availableCategories = listingsProvider.kategoriler.where((k) {
-      return k.tur == _secilenTur;
-    }).toList();
-
-    // Seçilen kategori yeni tür listesinde yoksa sıfırla
-    if (_secilenKategoriId != null &&
-        !availableCategories.any((k) => k.id == _secilenKategoriId)) {
-      _secilenKategoriId = null;
-    }
-
-    final dateFormat = DateFormat('dd.MM.yyyy, HH:mm');
-
-    return Scaffold(
-      appBar: Navigator.canPop(context)
-          ? AppBar(
-              title: const Text('Yeni İlan Ver'),
-            )
-          : null,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Yeni İlan Oluştur',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF18181B),
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const SizedBox(height: 2),
-              const Text(
-                'Kampüs topluluğuyla buluşma veya kayıp-buluntu ilanı paylaşın',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF71717A),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Tür Seçim Butonları
-              Row(
-                children: [
-                  Expanded(
-                    child: _TypeButton(
-                      label: 'Sosyal',
-                      isSelected: _secilenTur == IlanTuru.sosyal,
-                      onTap: () {
-                        setState(() {
-                          _secilenTur = IlanTuru.sosyal;
-                          _secilenKategoriId = null;
-                          _tarihHatasi = null;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _TypeButton(
-                      label: 'Kayıp',
-                      isSelected: _secilenTur == IlanTuru.kayip,
-                      onTap: () {
-                        setState(() {
-                          _secilenTur = IlanTuru.kayip;
-                          _secilenKategoriId = null;
-                          _secilenTarih = null;
-                          _secilenSaat = null;
-                          _tarihHatasi = null;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _TypeButton(
-                      label: 'Buluntu',
-                      isSelected: _secilenTur == IlanTuru.buluntu,
-                      onTap: () {
-                        setState(() {
-                          _secilenTur = IlanTuru.buluntu;
-                          _secilenKategoriId = null;
-                          _secilenTarih = null;
-                          _secilenSaat = null;
-                          _tarihHatasi = null;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Kategori Dropdown
-              DropdownButtonFormField<String>(
-                key: const Key('create_listing_category'),
-                initialValue: _secilenKategoriId,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Kategori *',
-                  hintText: 'Bir kategori seçin',
-                ),
-                items: availableCategories.map((k) {
-                  return DropdownMenuItem<String>(
-                    value: k.id,
-                    child: Text(k.ad),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  setState(() => _secilenKategoriId = val);
-                },
-                validator: (val) => ListingValidator.validateCategory(
-                  val,
-                  _secilenTur,
-                  availableCategories,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Başlık
-              TextFormField(
-                key: const Key('create_listing_title'),
-                controller: _baslikController,
-                maxLength: ListingValidator.maxTitleLength,
-                decoration: const InputDecoration(
-                  labelText: 'İlan Başlığı *',
-                  hintText: 'Örn: Kütüphanede Algoritma Vize Çalışması',
-                ),
-                validator: ListingValidator.validateTitle,
-              ),
-              const SizedBox(height: 8),
-
-              // Yer / Konum
-              TextFormField(
-                key: const Key('create_listing_location'),
-                controller: _yerController,
-                maxLength: ListingValidator.maxLocationLength,
-                decoration: const InputDecoration(
-                  labelText: 'Yer / Konum *',
-                  hintText: 'Örn: Merkez Kütüphane B Blok 2. Kat',
-                  prefixIcon: Icon(Icons.location_on_outlined, size: 20),
-                ),
-                validator: ListingValidator.validateLocation,
-              ),
-              const SizedBox(height: 8),
-
-              // Sosyal Buluşma için Tarih ve Saat Seçimi
-              if (_secilenTur == IlanTuru.sosyal) ...[
-                InkWell(
-                  key: const Key('create_listing_date_picker'),
-                  onTap: _pickDate,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: _tarihHatasi != null
-                            ? const Color(0xFFDC2626)
-                            : const Color(0xFFE4E4E7),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.schedule_outlined,
-                          size: 20,
-                          color: _tarihHatasi != null
-                              ? const Color(0xFFDC2626)
-                              : const Color(0xFF71717A),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _bulusmaZamani != null
-                                ? dateFormat.format(_bulusmaZamani!)
-                                : 'Buluşma Tarihi ve Saati Seçin *',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: _bulusmaZamani != null
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: _bulusmaZamani != null
-                                  ? const Color(0xFF18181B)
-                                  : const Color(0xFFA1A1AA),
-                            ),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 16,
-                          color: Color(0xFF71717A),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (_tarihHatasi != null) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12, top: 4),
-                    child: Text(
-                      _tarihHatasi!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFFDC2626),
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-              ],
-
-              // Açıklama
-              TextFormField(
-                key: const Key('create_listing_description'),
-                controller: _aciklamaController,
-                maxLines: 4,
-                maxLength: ListingValidator.maxDescriptionLength,
-                decoration: const InputDecoration(
-                  labelText: 'Açıklama *',
-                  hintText: 'Detaylı bilgi, buluşma notları veya teslim koşulları...',
-                  alignLabelWithHint: true,
-                ),
-                validator: ListingValidator.validateDescription,
-              ),
-              const SizedBox(height: 20),
-
-              // Yayınla Butonu
-              AppButton(
-                key: const Key('create_listing_submit_button'),
-                label: 'İlanı Yayınla',
-                icon: Icons.check_circle_outline,
-                isLoading: _isSubmitting,
-                onPressed: _submitForm,
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
+    if (!mounted || time == null) return;
+    setState(
+      () => _tarih = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
       ),
     );
   }
-}
 
-class _TypeButton extends StatelessWidget {
-  const _TypeButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
+  Future<void> _submit() async {
+    if (_saving || !_form.currentState!.validate()) return;
+    final access = _access(context.read<AuthProvider>());
+    if (access != RoleAccess.allowed) {
+      setState(() => _error = listingAccessMessage(access));
+      return;
+    }
+    final dateError = _validator.meetingDate(_tur, _tarih);
+    if (dateError != null) {
+      setState(() => _error = dateError);
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    final provider = context.read<ListingsProvider>();
+    final request = SaveListingRequest(
+      baslik: _baslik.text,
+      aciklama: _aciklama.text,
+      kategoriId: _kategoriId!,
+      tur: _tur,
+      yer: _yer.text,
+      bulusmaTarihi: _tur == IlanTuru.sosyal ? _tarih : null,
+    );
+    try {
+      final original = widget.ilan;
+      if (original != null) {
+        await provider.updateListing(original.id, request);
+        if (mounted) Navigator.pop(context, true);
+      } else {
+        await provider.createListing(request);
+        if (!mounted) return;
+        _baslik.clear();
+        _aciklama.clear();
+        _yer.clear();
+        // Dropdown reset'i eski onChanged değerini geri çağırabilir.
+        // Önce alanları sıfırla, ardından yeni ilan durumunu uygula.
+        _form.currentState!.reset();
+        setState(() {
+          _kategoriId = null;
+          _tarih = null;
+          _tur = IlanTuru.sosyal;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('İlan yayınlandı.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = e is ApiException
+              ? e.message
+              : 'İlan kaydedilemedi. Tekrar deneyin.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF18181B) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF18181B)
-                : const Color(0xFFE4E4E7),
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : const Color(0xFF71717A),
+    final access = _access(context.watch<AuthProvider>());
+    if (access != RoleAccess.allowed) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('İlan İşlemi')),
+        body: Center(child: Text(listingAccessMessage(access))),
+      );
+    }
+    final provider = context.watch<ListingsProvider>();
+    final categories = provider.kategoriler
+        .where((k) => _validator.acceptsCategory(_tur, k))
+        .toList();
+    final selected = categories.any((k) => k.id == _kategoriId)
+        ? _kategoriId
+        : null;
+    final busy = _saving || provider.isSaving;
+    return Scaffold(
+      appBar: widget.ilan == null
+          ? null
+          : AppBar(title: const Text('İlanı Düzenle')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _form,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.ilan == null ? 'Yeni İlan' : 'İlan Bilgileri',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListingsLoadStatus(provider: provider),
+              DropdownButtonFormField<IlanTuru>(
+                key: ValueKey(_tur),
+                initialValue: _tur,
+                decoration: const InputDecoration(labelText: 'İlan türü'),
+                items: const [
+                  DropdownMenuItem(
+                    value: IlanTuru.sosyal,
+                    child: Text('Sosyal'),
+                  ),
+                  DropdownMenuItem(value: IlanTuru.kayip, child: Text('Kayıp')),
+                  DropdownMenuItem(
+                    value: IlanTuru.buluntu,
+                    child: Text('Buluntu'),
+                  ),
+                ],
+                onChanged: busy
+                    ? null
+                    : (value) => setState(() {
+                        _tur = value!;
+                        _kategoriId = null;
+                        _tarih = null;
+                      }),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _baslik,
+                enabled: !busy,
+                maxLength: 150,
+                decoration: const InputDecoration(labelText: 'İlan Başlığı'),
+                validator: _validator.title,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                key: ValueKey('${_tur.name}:$selected'),
+                initialValue: selected,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Kategori'),
+                hint: Text(
+                  categories.isEmpty
+                      ? 'Kategori yüklenemedi'
+                      : 'Kategori seçin',
+                ),
+                items: categories
+                    .map(
+                      (k) => DropdownMenuItem(value: k.id, child: Text(k.ad)),
+                    )
+                    .toList(),
+                onChanged: busy
+                    ? null
+                    : (value) => setState(() => _kategoriId = value),
+                validator: (_) => _validator.category(
+                  selected,
+                  type: _tur,
+                  categories: provider.kategoriler,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _yer,
+                enabled: !busy,
+                maxLength: 200,
+                decoration: const InputDecoration(labelText: 'Yer'),
+                validator: _validator.location,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _aciklama,
+                enabled: !busy,
+                maxLength: 3000,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'Açıklama'),
+                validator: _validator.description,
+              ),
+              if (_tur == IlanTuru.sosyal) ...[
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: busy ? null : _selectDate,
+                  icon: const Icon(Icons.schedule),
+                  label: Text(
+                    _tarih == null
+                        ? 'Buluşma tarihi ve saati seçin'
+                        : DateFormat('dd.MM.yyyy HH:mm').format(_tarih!),
+                  ),
+                ),
+              ],
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ],
+              const SizedBox(height: 24),
+              AppButton(
+                label: widget.ilan == null
+                    ? 'İlanı Yayınla'
+                    : 'Değişiklikleri Kaydet',
+                isLoading: busy,
+                onPressed: provider.isLoading || categories.isEmpty
+                    ? null
+                    : _submit,
+              ),
+              const SizedBox(height: 24),
+            ],
           ),
         ),
       ),

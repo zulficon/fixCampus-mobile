@@ -26,16 +26,15 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
 
 ### Üçüncü hafta
 
-- **Berke Mahmut Acar:** İlan verme formu (`CreateListingScreen`), zengin detay
-  görünümü (`ListingDetailScreen`), ilan düzenleme ekranı (`EditListingScreen`),
-  silme onay iletişim kutusu (`AlertDialog`), DatePicker ve TimePicker ile buluşma
-  tarihi/saati seçimi ve `AppRoutes.editListing` rotası.
-- **Berna Kalkan:** CRUD API servis katmanı (`ListingService`, `ApiListingService`),
-  `ApiClient` üzerinden JWT Bearer token ile uç nokta haberleşmesi ve
-  `ListingsProvider` durum yönetimi katmanı.
-- **Zülfikar Durak:** `ListingValidator` alan doğrulama kuralları (başlık 3-150,
-  açıklama 5-3000, yer 2-200), Sosyal için gelecek tarih zorunluluğu, Kayıp/Buluntu
-  için tarih kısıtlaması, kategori-tür eşleşmesi ve sahiplik/yönetici yetki denetimi.
+- **Berna Kalkan:** `/api/kategoriler` ve `/api/ilanlar` üzerinden gerçek veri yükleme;
+  tipli servis ve Provider bağlantısı; Auth ile ortak API istemcisi, güncel Bearer
+  belirteci ve hesap değişiminde veri temizliği; API hata yönetimi.
+- **Berke Mahmut Acar:** İlan verme ve düzenleme form akışları (`CreateListingScreen`),
+  zengin ilan detay görünümü (`ListingDetailScreen`), silme onay iletişim kutusu (`AlertDialog`),
+  DatePicker ve TimePicker ile buluşma tarihi/saati seçimi, Material 3 arayüz uyarlamaları ve `AppRoutes.editListing` rotası.
+- **Zülfikar Durak:** Ortak ilan doğrulaması (başlık 2–150, açıklama 1–3000, yer 1–200 karakter);
+  kategori-tür eşleşmesi ve sosyal ilan için gelecek tarih kontrolü; oluşturma/düzenleme formunda
+  güncel oturum ve profil kontrolü; düzenleme/silmede ilan sahipliği denetimi.
 
 ## Uygulama ekranları
 
@@ -47,12 +46,17 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
 - Dinamik tür, kategori ve tarih/saat seçimli yeni ilan verme formu.
 - İlan düzenleme formu ve yetki denetimi.
 - Profil bilgileri, ad soyad düzenleme, İlanlarım ve çıkış.
-- Yönetici paneli ve rol kontrollü rota erişimi.
+- Yönetici paneli taslağı ve rol kontrollü rota erişimi.
+
+İlanlar ve kategoriler ortak ASP.NET Core Web API üzerinden yüklenir.
+Oluşturma, detay okuma, güncelleme ve silme aynı Supabase verisi üzerinde çalışır.
+Katılım ve şikâyet düğmeleri sonraki haftaların ekran iskeletidir.
 
 ## Çalıştırma
 
-Gereksinimler: Flutter >= 3.35, Dart >= 3.9, Android SDK ve Android cihaz
-veya emülatör. Profil işlemleri için ortak ASP.NET Core Web API çalışmalıdır.
+Gereksinimler: Flutter >= 3.47, Dart >= 3.13, Android SDK ve Android cihaz
+veya emülatör. Doğrulamada Flutter 3.47.8 kullanılır. Profil ve ilan işlemleri için
+ortak ASP.NET Core Web API çalışmalıdır.
 
 ```sh
 flutter pub get
@@ -77,7 +81,11 @@ flutter test --reporter expanded
 flutter build apk --debug
 ```
 
-3. Hafta doğrulamasında 106 test geçti, `flutter analyze` 0 uyarı/hata verdi ve model doğrulama programı başarılı oldu.
+3 Kasım 2026 doğrulamasında 106 Flutter testi ve ortak ağ projesinin Auth,
+yetki/OpenAPI ve ilan kontrol projeleri geçti; Android debug APK derlendi. Ayrıntılar
+[GitHub Actions](https://github.com/zulficon/fixCampus-mobile/actions/runs/41627725194)
+ve [hafta 3 doğrulama belgesinde](docs/hafta-03-api-baglantisi.md) bulunur.
+Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 
 ## Teknik belgeler
 
@@ -86,7 +94,8 @@ flutter build apk --debug
 - [API servisleri](docs/hafta-01-api-servisi.md)
 - [Giriş ve profil](docs/hafta-02-auth-profil.md)
 - [Rol ve oturum kontrolü](docs/hafta-02-rol-ve-oturum.md)
-- [İlan CRUD ve sayfaları](docs/hafta-03-ilan-crud-ve-sayfalari.md)
+- [İlan doğrulama ve sahiplik](docs/hafta-03-ilan-dogrulama.md)
+- [Üçüncü hafta ilan API bağlantısı ve doğrulama](docs/hafta-03-api-baglantisi.md)
 
 ## Ekip
 

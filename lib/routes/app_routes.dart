@@ -5,7 +5,6 @@ import '../screens/admin/admin_panel_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/listings/create_listing_screen.dart';
-import '../screens/listings/edit_listing_screen.dart';
 import '../screens/listings/listing_detail_screen.dart';
 import '../screens/shell/main_shell_screen.dart';
 import '../screens/splash/splash_screen.dart';
@@ -34,11 +33,20 @@ class AppRoutes {
 
       case main:
         return MaterialPageRoute(
-            builder: (_) => const AuthGuard(child: MainShellScreen()));
+          builder: (_) => const AuthGuard(child: MainShellScreen()),
+        );
 
       case createListing:
         return MaterialPageRoute(
-            builder: (_) => const AuthGuard(child: CreateListingScreen()));
+          builder: (_) => const AuthGuard(child: CreateListingScreen()),
+        );
+
+      case editListing:
+        final ilan = settings.arguments as Ilan?;
+        if (ilan == null) return _errorRoute('İlan parametresi eksik.');
+        return MaterialPageRoute(
+          builder: (_) => AuthGuard(child: CreateListingScreen(ilan: ilan)),
+        );
 
       case listingDetail:
         final ilan = settings.arguments as Ilan?;
@@ -49,19 +57,11 @@ class AppRoutes {
         }
         return _errorRoute('İlan parametresi eksik.');
 
-      case editListing:
-        final ilan = settings.arguments as Ilan?;
-        if (ilan != null) {
-          return MaterialPageRoute(
-            builder: (_) => AuthGuard(child: EditListingScreen(ilan: ilan)),
-          );
-        }
-        return _errorRoute('İlan parametresi eksik.');
-
       case adminPanel:
         return MaterialPageRoute(
-            builder: (_) =>
-                const AuthGuard(adminOnly: true, child: AdminPanelScreen()));
+          builder: (_) =>
+              const AuthGuard(adminOnly: true, child: AdminPanelScreen()),
+        );
 
       default:
         return _errorRoute('Rota bulunamadı: ${settings.name}');
