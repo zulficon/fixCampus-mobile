@@ -51,15 +51,45 @@ void main() {
       isNotNull,
     );
   });
-  test('Kayıp ve buluntu ortak eşya kategorilerini kullanır', () {
+  test('Her ilan türü yalnızca kendi kategorisini kullanır', () {
     for (final type in [IlanTuru.kayip, IlanTuru.buluntu]) {
       for (final id in ['lost', 'found']) {
         expect(
           validator.category(id, type: type, categories: categories),
-          isNull,
+          id == (type == IlanTuru.kayip ? 'lost' : 'found')
+              ? isNull
+              : isNotNull,
         );
       }
     }
+  });
+
+  test('Metin sınırlarının altı, üstü ve trim davranışı', () {
+    expect(validator.title('a'), isNotNull);
+    expect(validator.title('ab'), isNull);
+    expect(validator.title('a' * 150), isNull);
+    expect(validator.title('a' * 151), isNotNull);
+    expect(validator.title('  ab  '), isNull);
+    expect(validator.description('a' * 3000), isNull);
+    expect(validator.description('a' * 3001), isNotNull);
+    expect(validator.location('a' * 200), isNull);
+    expect(validator.location('a' * 201), isNotNull);
+  });
+  test('Sosyal ilan tarihi boş, geçmiş veya şimdi olamaz', () {
+    final now = DateTime.utc(2026, 11, 3);
+    for (final date in [null, now.subtract(const Duration(seconds: 1)), now]) {
+      expect(validator.meetingDate(IlanTuru.sosyal, date, now: now), isNotNull);
+    }
+    expect(
+      validator.meetingDate(
+        IlanTuru.sosyal,
+        now.add(const Duration(seconds: 1)),
+        now: now,
+      ),
+      isNull,
+    );
+    expect(validator.meetingDate(IlanTuru.kayip, null, now: now), isNull);
+    expect(validator.meetingDate(IlanTuru.buluntu, null, now: now), isNull);
   });
 
   final student = Profil(

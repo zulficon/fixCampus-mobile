@@ -22,13 +22,21 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
   uygulamaya dönüşte rol yenileme ve oturum kaybında korunan içeriği kapatma.
   Rol doğrulaması sırasında mevcut sekme durumu korunur.
 
-### Üçüncü hafta
+### Üçüncü hafta — Berna: API bağlantısı
 
-- **Zülfikar Durak:** Ortak ilan alan doğrulaması, ilan oluşturma formunda
-  zorunlu alan ve kategori/tür kontrolü, tür değişiminde kategori temizleme,
-  doğrulanmış oturum kontrolü ve düzenleme/silme için sahiplik politikası.
-  İlan API işlemleri ve düzenleme/silme ekranlarının bu politikaya bağlantısı
-  henüz tamamlanmamıştır.
+- `/api/kategoriler` ve `/api/ilanlar` üzerinden gerçek veri yükleme.
+- İlan oluşturma, detay, güncelleme ve silme için tipli servis ve Provider bağlantısı.
+- Auth ile ortak API istemcisi, güncel Bearer belirteci ve hesap değişiminde veri temizliği.
+- API alan hataları, oturum/yetki hataları, silinmiş ilan, ağ hatası ve tekrar deneme.
+- Mevcut form ve detay ekranında CRUD çağrıları; güncelleme/silme yalnızca sahibine gösterilir.
+
+### Üçüncü hafta — Zülfikar: doğrulama ve sahiplik
+
+- Ortak ilan doğrulaması: başlık 2–150, açıklama 1–3000, yer 1–200 karakter.
+- Kategorinin ilan türüyle eşleşmesi ve sosyal ilan için gelecek tarih kontrolü.
+- Oluşturma/düzenleme formunda güncel oturum ve profil kontrolü.
+- Düzenleme/silmede ilan sahipliği; silme onayından sonra yetkiyi yeniden kontrol etme.
+- Hesap veya profil doğrulama durumu değişince açık formdaki işlemleri kapatma.
 
 ## Uygulama ekranları
 
@@ -40,13 +48,15 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
 - Profil bilgileri, ad soyad düzenleme, İlanlarım ve çıkış.
 - Yönetici paneli taslağı ve rol kontrollü rota erişimi.
 
-İlan ekranları `ListingsProvider` içindeki demo verileri kullanır. İlan verme,
-katılım ve şikâyet düğmeleri ilk hafta ekran iskeletinin parçalarıdır.
+İlanlar ve kategoriler ortak ASP.NET Core Web API üzerinden yüklenir.
+Oluşturma, detay okuma, güncelleme ve silme aynı Supabase verisi üzerinde çalışır.
+Katılım ve şikâyet düğmeleri sonraki haftaların ekran iskeletidir.
 
 ## Çalıştırma
 
-Gereksinimler: Flutter >= 3.35, Dart >= 3.9, Android SDK ve Android cihaz
-veya emülatör. Profil işlemleri için ortak ASP.NET Core Web API çalışmalıdır.
+Gereksinimler: Flutter >= 3.47, Dart >= 3.13, Android SDK ve Android cihaz
+veya emülatör. Doğrulamada Flutter 3.47.8 kullanılır. Profil ve ilan işlemleri için
+ortak ASP.NET Core Web API çalışmalıdır.
 
 ```sh
 flutter pub get
@@ -71,7 +81,11 @@ flutter test --reporter expanded
 flutter build apk --debug
 ```
 
-26 Ekim 2026 doğrulamasında 69 test geçti ve Android debug APK derlendi.
+3 Kasım 2026 doğrulamasında 106 Flutter testi ve ortak ağ projesinin Auth,
+yetki/OpenAPI ve ilan kontrol projeleri geçti; Android debug APK derlendi. Ayrıntılar
+[GitHub Actions](https://github.com/zulficon/fixCampus-mobile/actions/runs/41627725194)
+ve [hafta 3 doğrulama belgesinde](docs/hafta-03-api-baglantisi.md) bulunur.
+Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 
 ## Teknik belgeler
 
@@ -81,6 +95,7 @@ flutter build apk --debug
 - [Giriş ve profil](docs/hafta-02-auth-profil.md)
 - [Rol ve oturum kontrolü](docs/hafta-02-rol-ve-oturum.md)
 - [İlan doğrulama ve sahiplik](docs/hafta-03-ilan-dogrulama.md)
+- [Üçüncü hafta ilan API bağlantısı ve doğrulama](docs/hafta-03-api-baglantisi.md)
 
 ## Ekip
 

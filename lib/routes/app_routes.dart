@@ -17,6 +17,7 @@ class AppRoutes {
   static const String main = '/main';
   static const String createListing = '/create-listing';
   static const String listingDetail = '/listing-detail';
+  static const String editListing = '/edit-listing';
   static const String adminPanel = '/admin-panel';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -32,11 +33,20 @@ class AppRoutes {
 
       case main:
         return MaterialPageRoute(
-            builder: (_) => const AuthGuard(child: MainShellScreen()));
+          builder: (_) => const AuthGuard(child: MainShellScreen()),
+        );
 
       case createListing:
         return MaterialPageRoute(
-            builder: (_) => const AuthGuard(child: CreateListingScreen()));
+          builder: (_) => const AuthGuard(child: CreateListingScreen()),
+        );
+
+      case editListing:
+        final ilan = settings.arguments as Ilan?;
+        if (ilan == null) return _errorRoute('İlan parametresi eksik.');
+        return MaterialPageRoute(
+          builder: (_) => AuthGuard(child: CreateListingScreen(ilan: ilan)),
+        );
 
       case listingDetail:
         final ilan = settings.arguments as Ilan?;
@@ -49,8 +59,9 @@ class AppRoutes {
 
       case adminPanel:
         return MaterialPageRoute(
-            builder: (_) =>
-                const AuthGuard(adminOnly: true, child: AdminPanelScreen()));
+          builder: (_) =>
+              const AuthGuard(adminOnly: true, child: AdminPanelScreen()),
+        );
 
       default:
         return _errorRoute('Rota bulunamadı: ${settings.name}');

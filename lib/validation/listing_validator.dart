@@ -1,19 +1,21 @@
 import '../models/models.dart';
 
 /// Oluşturma ve düzenleme formlarının ortak alan kuralları.
-/// Sunucu uzunluk sınırları API sözleşmesiyle ayrıca eşleştirilir.
+/// Güncel ilan formu/API sözleşmesindeki metin ve kategori kuralları.
 class ListingValidator {
   const ListingValidator();
 
-  String? title(String? value) => _required(value, 'İlan başlığını girin.');
-  String? description(String? value) =>
-      _required(value, 'İlan açıklamasını girin.');
-  String? location(String? value) => _required(value, 'İlan yerini girin.');
+  String? title(String? value) => _text(
+    value,
+    min: 2,
+    max: 150,
+    shortMessage: 'Başlık en az 2 karakter olmalıdır.',
+  );
+  String? description(String? value) => _text(value, max: 3000);
+  String? location(String? value) => _text(value, max: 200);
 
   bool acceptsCategory(IlanTuru type, Kategori category) =>
-      type == IlanTuru.sosyal
-      ? category.tur == IlanTuru.sosyal
-      : category.tur != IlanTuru.sosyal;
+      category.tur == type;
 
   String? category(
     String? id, {
@@ -27,6 +29,22 @@ class ListingValidator {
     return 'İlan türüne uygun bir kategori seçin.';
   }
 
-  String? _required(String? value, String message) =>
-      value == null || value.trim().isEmpty ? message : null;
+  String? meetingDate(IlanTuru type, DateTime? date, {DateTime? now}) =>
+      type == IlanTuru.sosyal &&
+          (date == null || !date.isAfter(now ?? DateTime.now()))
+      ? 'Sosyal ilan için gelecekte bir buluşma zamanı seçin.'
+      : null;
+
+  String? _text(
+    String? value, {
+    int min = 1,
+    required int max,
+    String? shortMessage,
+  }) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Bu alan zorunludur.';
+    if (text.length < min) return shortMessage;
+    if (text.length > max) return 'En fazla $max karakter girebilirsiniz.';
+    return null;
+  }
 }
