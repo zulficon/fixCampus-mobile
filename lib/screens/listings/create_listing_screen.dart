@@ -180,19 +180,73 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.ilan == null ? 'Yeni İlan' : 'İlan Bilgileri',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
+              // Başlık ve Açıklayıcı Kart
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF18181B),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        widget.ilan == null
+                            ? Icons.add_circle_outline
+                            : Icons.edit_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.ilan == null ? 'Yeni İlan' : 'İlan Bilgileri',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.ilan == null
+                                ? 'Kampüsteki arkadaşlarınla paylaş'
+                                : 'İlan detaylarını güncelleyin',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
               ListingsLoadStatus(provider: provider),
+
+              // İlan Türü Dropdown
               DropdownButtonFormField<IlanTuru>(
                 key: ValueKey(_tur),
                 initialValue: _tur,
-                decoration: const InputDecoration(labelText: 'İlan türü'),
+                decoration: InputDecoration(
+                  labelText: 'İlan türü',
+                  prefixIcon: const Icon(Icons.campaign_outlined, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 items: const [
                   DropdownMenuItem(
                     value: IlanTuru.sosyal,
@@ -213,19 +267,36 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                       }),
               ),
               const SizedBox(height: 16),
+
+              // İlan Başlığı (TextFormField 0)
               TextFormField(
                 controller: _baslik,
                 enabled: !busy,
                 maxLength: 150,
-                decoration: const InputDecoration(labelText: 'İlan Başlığı'),
+                decoration: InputDecoration(
+                  labelText: 'İlan Başlığı',
+                  hintText: 'Örn: Final Çalışma Grubu / Mavi Defter',
+                  prefixIcon: const Icon(Icons.title_outlined, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 validator: _validator.title,
               ),
               const SizedBox(height: 16),
+
+              // Kategori Dropdown
               DropdownButtonFormField<String>(
                 key: ValueKey('${_tur.name}:$selected'),
                 initialValue: selected,
                 isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Kategori'),
+                decoration: InputDecoration(
+                  labelText: 'Kategori',
+                  prefixIcon: const Icon(Icons.category_outlined, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 hint: Text(
                   categories.isEmpty
                       ? 'Kategori yüklenemedi'
@@ -246,39 +317,93 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+
+              // Yer (TextFormField 1)
               TextFormField(
                 controller: _yer,
                 enabled: !busy,
                 maxLength: 200,
-                decoration: const InputDecoration(labelText: 'Yer'),
+                decoration: InputDecoration(
+                  labelText: 'Yer',
+                  hintText: 'Örn: Merkez Kütüphane 2. Kat',
+                  prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 validator: _validator.location,
               ),
               const SizedBox(height: 16),
+
+              // Açıklama (TextFormField 2)
               TextFormField(
                 controller: _aciklama,
                 enabled: !busy,
                 maxLength: 3000,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Açıklama'),
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: 'Açıklama',
+                  hintText: 'Detaylı bilgi, notlar veya koşullar...',
+                  prefixIcon: const Icon(Icons.notes_outlined, size: 20),
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 validator: _validator.description,
               ),
+
+              // Sosyal İlan Buluşma Zamanı
               if (_tur == IlanTuru.sosyal) ...[
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: busy ? null : _selectDate,
-                  icon: const Icon(Icons.schedule),
+                  icon: const Icon(Icons.schedule, size: 18),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                   label: Text(
                     _tarih == null
                         ? 'Buluşma tarihi ve saati seçin'
                         : DateFormat('dd.MM.yyyy HH:mm').format(_tarih!),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
               if (_error != null) ...[
                 const SizedBox(height: 16),
-                Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFCA5A5)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Color(0xFFDC2626),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                            color: Color(0xFFDC2626),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
               const SizedBox(height: 24),
@@ -286,6 +411,9 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 label: widget.ilan == null
                     ? 'İlanı Yayınla'
                     : 'Değişiklikleri Kaydet',
+                icon: widget.ilan == null
+                    ? Icons.check_circle_outline
+                    : Icons.save_outlined,
                 isLoading: busy,
                 onPressed: provider.isLoading || categories.isEmpty
                     ? null

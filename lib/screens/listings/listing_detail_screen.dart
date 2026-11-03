@@ -121,6 +121,28 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     final provider = context.watch<ListingsProvider>();
     final auth = context.watch<AuthProvider>();
     final ilan = _ilan;
+    final canManage =
+        ilan != null &&
+        listingAccess(
+          auth,
+          ListingMutation.update,
+          listing: ilan,
+        ) ==
+        RoleAccess.allowed;
+
+    final kategori = ilan != null
+        ? provider.kategoriler.where((k) => k.id == ilan.kategoriId)
+        : null;
+    final kategoriAdi =
+        kategori != null && kategori.isNotEmpty ? kategori.first.ad : null;
+
+    final isAttending =
+        ilan != null &&
+        auth.currentUser != null &&
+        provider.isUserAttending(ilan.id, auth.currentUser!.id);
+    final attendanceCount =
+        ilan != null ? provider.getAttendanceCount(ilan.id) : 0;
+
     return Scaffold(
       appBar: AppBar(title: const Text('İlan Detayı')),
       body: _loading
@@ -133,6 +155,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
                     TextButton(
                       onPressed: _load,
                       child: const Text('Tekrar dene'),
@@ -148,70 +171,249 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  // Rozetler & Kategori
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       StatusBadge.tur(tur: ilan.tur),
-                      const SizedBox(width: 8),
                       StatusBadge.durum(durum: ilan.durum),
+                      if (kategoriAdi != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: Text(
+                            kategoriAdi,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF475569),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
+
+                  // Başlık
                   Text(
                     ilan.baslik,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 22,
                       fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.5,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text('Yer: ${ilan.yer}'),
-                  if (ilan.bulusmaTarihi != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      DateFormat(
-                        'dd.MM.yyyy, HH:mm',
-                      ).format(ilan.bulusmaTarihi!.toLocal()),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Açıklama',
-                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 6),
-                  Text(ilan.aciklama),
-                  const SizedBox(height: 24),
-                  if (listingAccess(
-                        auth,
-                        ListingMutation.update,
-                        listing: ilan,
-                      ) ==
-                      RoleAccess.allowed) ...[
-                    AppButton(
-                      label: 'İlanı Düzenle',
-                      onPressed: provider.isSaving ? null : _edit,
+
+                  // Oluşturulma Tarihi
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        DateFormat(
+                          'dd.MM.yyyy, HH:mm',
+                        ).format(ilan.olusturulmaTarihi.toLocal()),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Konum ve Buluşma Zamanı Bilgi Kartı
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    const SizedBox(height: 10),
-                    AppButton(
-                      label: 'İlanı Sil',
-                      isOutlined: true,
-                      isLoading: provider.isSaving,
-                      onPressed: _delete,
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              size: 18,
+                              color: Color(0xFF2563EB),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Yer: ${ilan.yer}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (ilan.bulusmaTarihi != null) ...[
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Divider(height: 1),
+                          ),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today_outlined,
+                                size: 16,
+                                color: Color(0xFF16A34A),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  DateFormat(
+                                    'dd.MM.yyyy, HH:mm',
+                                  ).format(ilan.bulusmaTarihi!.toLocal()),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Açıklama Kartı
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE4E4E7)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Açıklama',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF18181B),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          ilan.aciklama,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF3F3F46),
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Sahiplik Eylem Çubuğu
+                  if (canManage) ...[
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.manage_accounts_outlined,
+                                size: 18,
+                                color: Color(0xFF0F172A),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'İlanınızı Yönetin',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            label: 'İlanı Düzenle',
+                            icon: Icons.edit_outlined,
+                            onPressed: provider.isSaving ? null : _edit,
+                          ),
+                          const SizedBox(height: 10),
+                          AppButton(
+                            label: 'İlanı Sil',
+                            icon: Icons.delete_outline,
+                            isOutlined: true,
+                            isLoading: provider.isSaving,
+                            onPressed: _delete,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ],
+
+                  // Katılım Butonu (Sosyal İlanlar İçin)
                   if (ilan.tur == IlanTuru.sosyal) ...[
                     AppButton(
-                      label: 'Geliyorum (İskelet Buton)',
-                      onPressed: () => _skeleton('Geliyorum'),
+                      label: isAttending
+                          ? 'Katıldın ($attendanceCount)'
+                          : 'Buluşmaya Katıl ($attendanceCount)',
+                      icon: isAttending
+                          ? Icons.check
+                          : Icons.group_add_outlined,
+                      isOutlined: isAttending,
+                      onPressed: auth.currentUser == null
+                          ? null
+                          : () {
+                              provider.toggleAttendance(
+                                ilan.id,
+                                auth.currentUser!.id,
+                              );
+                            },
                     ),
                     const SizedBox(height: 10),
                   ],
+
+                  // Şikayet Butonu
                   AppButton(
                     label: 'İlanı Şikâyet Et (İskelet)',
+                    icon: Icons.flag_outlined,
                     isOutlined: true,
                     onPressed: () => _skeleton('Şikâyet Et'),
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
