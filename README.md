@@ -47,8 +47,9 @@ Katılım ve şikâyet düğmeleri sonraki haftaların ekran iskeletidir.
 
 ## Çalıştırma
 
-Gereksinimler: Flutter >= 3.35, Dart >= 3.9, Android SDK ve Android cihaz
-veya emülatör. Profil işlemleri için ortak ASP.NET Core Web API çalışmalıdır.
+Gereksinimler: Flutter >= 3.47, Dart >= 3.13, Android SDK ve Android cihaz
+veya emülatör. Doğrulamada Flutter 3.47.8 kullanılır. Profil ve ilan işlemleri için
+ortak ASP.NET Core Web API çalışmalıdır.
 
 ```sh
 flutter pub get
@@ -73,7 +74,11 @@ flutter test --reporter expanded
 flutter build apk --debug
 ```
 
-26 Ekim 2026 doğrulamasında 69 test geçti ve Android debug APK derlendi.
+3 Kasım 2026 doğrulamasında 106 Flutter testi ve ortak ağ projesinin Auth,
+yetki/OpenAPI ve ilan kontrol projeleri geçti; Android debug APK derlendi. Ayrıntılar
+[GitHub Actions](https://github.com/zulficon/fixCampus-mobile/actions/runs/41627725194)
+ve [hafta 3 doğrulama belgesinde](docs/hafta-03-api-baglantisi.md) bulunur.
+Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 
 ## Teknik belgeler
 
