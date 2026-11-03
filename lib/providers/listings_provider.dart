@@ -1,212 +1,218 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../services/api_exception.dart';
+import '../services/listings_service.dart';
 
-/// İlanlar, Filtreleme ve Katılım Yönetimi Sağlayıcısı
+/// Ortak Web API'den okunan ilanlar ve yalnızca onaylanan değişiklikler.
 class ListingsProvider extends ChangeNotifier {
-  ListingsProvider() {
-    _initSampleData();
-  }
+  ListingsProvider({ListingsService? service}) : _service = service;
 
-  final List<Kategori> _kategoriler = [];
-  final List<Ilan> _ilanlar = [];
+  final ListingsService? _service;
+  List<Kategori> _kategoriler = [];
+  List<Ilan> _ilanlar = [];
   final List<Katilim> _katilimlar = [];
+  bool _isLoading = false;
+  bool _isSaving = false;
+  bool _disposed = false;
+  String? _error;
+  String? _userId;
+  int _sessionVersion = 0;
+  int _dataVersion = 0;
+  int _loadVersion = 0;
 
   List<Kategori> get kategoriler => List.unmodifiable(_kategoriler);
   List<Ilan> get ilanlar => List.unmodifiable(_ilanlar);
   List<Katilim> get katilimlar => List.unmodifiable(_katilimlar);
+  bool get isLoading => _isLoading;
+  bool get isSaving => _isSaving;
+  String? get error => _error;
 
-  /// Sosyal Radar ilanları (yalnızca Sosyal türündeki aktif buluşmalar)
-  List<Ilan> get radarListings {
-    return _ilanlar
-        .where((i) => i.tur == IlanTuru.sosyal && i.durum == IlanDurumu.aktif)
-        .toList();
+  /// ProxyProvider güncellemesi sırasında eski hesap verisi hemen temizlenir.
+  /// Bildirim ve yükleme build bittikten sonra yapılır.
+  void setSession(String? userId) {
+    if (_userId == userId) return;
+    _userId = userId;
+    final version = ++_sessionVersion;
+    ++_loadVersion;
+    _ilanlar = [];
+    _kategoriler = [];
+    _katilimlar.clear();
+    _error = null;
+    _isSaving = false;
+    _isLoading = userId != null;
+    Future.microtask(() async {
+      if (!_isCurrent(version)) return;
+      _notify();
+      if (userId != null) await load();
+    });
   }
 
-  /// Kayıp & Buluntu ilanları
-  List<Ilan> getLostFoundListings({IlanTuru? turFilter}) {
-    return _ilanlar.where((i) {
-      final isLostOrFound = i.tur == IlanTuru.kayip || i.tur == IlanTuru.buluntu;
-      if (!isLostOrFound) return false;
-      if (turFilter != null && i.tur != turFilter) return false;
+  List<Ilan> get radarListings => _ilanlar
+      .where((i) => i.tur == IlanTuru.sosyal && i.durum == IlanDurumu.aktif)
+      .toList();
+
+  List<Ilan> getLostFoundListings({IlanTuru? turFilter}) => _ilanlar.where((i) {
+    final lostFound = i.tur == IlanTuru.kayip || i.tur == IlanTuru.buluntu;
+    return lostFound && (turFilter == null || i.tur == turFilter);
+  }).toList();
+
+  List<Ilan> getUserListings(String userId) =>
+      _ilanlar.where((i) => i.sahipId == userId).toList();
+
+  Future<bool> load() async {
+    final session = _sessionVersion;
+    final load = ++_loadVersion;
+    final data = _dataVersion;
+    _isLoading = true;
+    _error = null;
+    _notify();
+    try {
+      final service = _requireService();
+      // İkisi de başarılı olmadan eski listeyi kısmen değiştirme.
+      final results = await Future.wait<Object>([
+        service.getCategories(),
+        service.getListings(),
+      ]);
+      if (!_isCurrent(session) || load != _loadVersion) return false;
+      _kategoriler = results[0] as List<Kategori>;
+      if (data == _dataVersion) _ilanlar = List.of(results[1] as List<Ilan>);
       return true;
-    }).toList();
+    } catch (e) {
+      if (_isCurrent(session) && load == _loadVersion) _error = _message(e);
+      return false;
+    } finally {
+      if (_isCurrent(session) && load == _loadVersion) {
+        _isLoading = false;
+        _notify();
+      }
+    }
   }
 
-  /// Belirli bir kullanıcının ilanları
-  List<Ilan> getUserListings(String userId) {
-    return _ilanlar.where((i) => i.sahipId == userId).toList();
+  Future<Ilan> getListing(String id) async {
+    final session = _sessionVersion;
+    final data = _dataVersion;
+    try {
+      final ilan = await _requireService().getListing(id);
+      _checkSession(session);
+      // Önceden başlayan detay isteği yeni güncellemeyi ezmesin.
+      if (data == _dataVersion) {
+        _upsert(ilan);
+        _notify();
+      }
+      return ilan;
+    } on ListingApiException catch (e) {
+      if (_isCurrent(session) && e.statusCode == 404) {
+        _ilanlar.removeWhere((i) => i.id == id);
+        _notify();
+      }
+      rethrow;
+    }
   }
 
-  /// Kullanıcının bu buluşmaya katılıp katılmadığı
-  bool isUserAttending(String ilanId, String userId) {
-    return _katilimlar.any((k) => k.ilanId == ilanId && k.profilId == userId);
+  Future<Ilan> createListing(SaveListingRequest request) => _save(
+    () => _requireService().createListing(request),
+    (ilan) => _upsert(ilan),
+  );
+
+  Future<Ilan> updateListing(String id, SaveListingRequest request) => _save(
+    () => _requireService().updateListing(id, request),
+    (ilan) => _upsert(ilan),
+  );
+
+  Future<void> deleteListing(String id) =>
+      _save<void>(() => _requireService().deleteListing(id), (_) {
+        _ilanlar.removeWhere((i) => i.id == id);
+        _katilimlar.removeWhere((k) => k.ilanId == id);
+      });
+
+  Future<T> _save<T>(
+    Future<T> Function() action,
+    void Function(T) apply,
+  ) async {
+    if (_isSaving) {
+      throw const ApiException(ApiFailure.http, 'Devam eden işlemi bekleyin.');
+    }
+    final session = _sessionVersion;
+    _isSaving = true;
+    _notify();
+    try {
+      final result = await action();
+      _checkSession(session);
+      ++_dataVersion;
+      apply(result);
+      return result;
+    } finally {
+      if (_isCurrent(session)) {
+        _isSaving = false;
+        _notify();
+      }
+    }
   }
 
-  /// Bir ilanın katılımcı sayısı
-  int getAttendanceCount(String ilanId) {
-    return _katilimlar.where((k) => k.ilanId == ilanId).length;
+  void _upsert(Ilan ilan) {
+    final index = _ilanlar.indexWhere((i) => i.id == ilan.id);
+    if (index < 0) {
+      _ilanlar = [ilan, ..._ilanlar];
+    } else {
+      _ilanlar[index] = ilan;
+    }
   }
 
-  /// Yeni İlan Ekleme
-  void addListing(Ilan yeniIlan) {
-    _ilanlar.insert(0, yeniIlan);
-    notifyListeners();
+  ListingsService _requireService() =>
+      _service ??
+      (throw const ApiException(
+        ApiFailure.connection,
+        'İlan servisi yapılandırılmamış.',
+      ));
+
+  bool _isCurrent(int version) => !_disposed && version == _sessionVersion;
+
+  void _checkSession(int version) {
+    if (!_isCurrent(version)) {
+      throw const ApiException(
+        ApiFailure.http,
+        'Oturum değişti. Yeniden deneyin.',
+      );
+    }
   }
 
-  /// Sosyal Buluşmaya Katılma / Katılımı Geri Alma ("Geliyorum")
+  static String _message(Object error) => error is ApiException
+      ? error.message
+      : 'İlanlar yüklenemedi. Tekrar deneyin.';
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  // Katılım servisi 5. hafta görevidir; mevcut ekran iskeletinin yerel durumu.
+  bool isUserAttending(String ilanId, String userId) =>
+      _katilimlar.any((k) => k.ilanId == ilanId && k.profilId == userId);
+
+  int getAttendanceCount(String ilanId) =>
+      _katilimlar.where((k) => k.ilanId == ilanId).length;
+
   void toggleAttendance(String ilanId, String userId) {
-    final existingIndex = _katilimlar.indexWhere(
+    final index = _katilimlar.indexWhere(
       (k) => k.ilanId == ilanId && k.profilId == userId,
     );
-
-    if (existingIndex >= 0) {
-      // Katılımı geri al
-      _katilimlar.removeAt(existingIndex);
+    if (index >= 0) {
+      _katilimlar.removeAt(index);
     } else {
-      // Katıl
       _katilimlar.add(
         Katilim(
-          id: 'katilim-${DateTime.now().millisecondsSinceEpoch}',
+          id: 'katilim-${DateTime.now().microsecondsSinceEpoch}',
           ilanId: ilanId,
           profilId: userId,
           katilimTarihi: DateTime.now().toUtc(),
         ),
       );
     }
-    notifyListeners();
+    _notify();
   }
 
-  /// İlanı Çözüldü Olarak İşaretle
-  void markAsResolved(String ilanId) {
-    final index = _ilanlar.indexWhere((i) => i.id == ilanId);
-    if (index != -1) {
-      final old = _ilanlar[index];
-      _ilanlar[index] = Ilan(
-        id: old.id,
-        sahipId: old.sahipId,
-        kategoriId: old.kategoriId,
-        baslik: old.baslik,
-        aciklama: old.aciklama,
-        tur: old.tur,
-        yer: old.yer,
-        bulusmaTarihi: old.bulusmaTarihi,
-        durum: IlanDurumu.cozuldu,
-        olusturulmaTarihi: old.olusturulmaTarihi,
-      );
-      notifyListeners();
-    }
-  }
-
-  void _initSampleData() {
-    _kategoriler.addAll([
-      const Kategori(id: 'kat-1', ad: 'Spor', tur: IlanTuru.sosyal),
-      const Kategori(id: 'kat-2', ad: 'Ders & Çalışma', tur: IlanTuru.sosyal),
-      const Kategori(id: 'kat-3', ad: 'Kahve & Sohbet', tur: IlanTuru.sosyal),
-      const Kategori(id: 'kat-4', ad: 'Elektronik Eşya', tur: IlanTuru.kayip),
-      const Kategori(id: 'kat-5', ad: 'Kart & Cüzdan', tur: IlanTuru.kayip),
-      const Kategori(id: 'kat-6', ad: 'Kırtasiye & Kitap', tur: IlanTuru.buluntu),
-    ]);
-
-    final now = DateTime.now().toUtc();
-
-    _ilanlar.addAll([
-      // Sosyal Radar İlanları
-      Ilan(
-        id: 'ilan-1',
-        sahipId: '00000000-0000-0000-0000-000000000001',
-        kategoriId: 'kat-2',
-        baslik: 'Merkez Kütüphanede Algoritma Vize Çalışması',
-        aciklama: 'BLM4587 ve algoritma dersi için kütüphane B blok 2. katta birlikte soru çözeceğiz.',
-        tur: IlanTuru.sosyal,
-        yer: 'Merkez Kütüphane B Blok 2. Kat',
-        bulusmaTarihi: now.add(const Duration(days: 1, hours: 2)),
-        durum: IlanDurumu.aktif,
-        olusturulmaTarihi: now.subtract(const Duration(hours: 3)),
-      ),
-      Ilan(
-        id: 'ilan-2',
-        sahipId: '00000000-0000-0000-0000-000000000003',
-        kategoriId: 'kat-1',
-        baslik: 'Kampüs Açık Sahada Voleybol Maçı',
-        aciklama: 'Saat 17.00 sahada 2 kişi eksiğimiz var, katılmak isteyen herkes gelebilir!',
-        tur: IlanTuru.sosyal,
-        yer: 'Spor Tesisleri Açık Voleybol Sahası',
-        bulusmaTarihi: now.add(const Duration(hours: 18)),
-        durum: IlanDurumu.aktif,
-        olusturulmaTarihi: now.subtract(const Duration(hours: 5)),
-      ),
-      Ilan(
-        id: 'ilan-3',
-        sahipId: '00000000-0000-0000-0000-000000000004',
-        kategoriId: 'kat-3',
-        baslik: 'Mühendislik Kantininde Kahve & Sohbet',
-        aciklama: 'Ders arası kahve içip mobil proje fikirleri tartışıyoruz.',
-        tur: IlanTuru.sosyal,
-        yer: 'Mühendislik Fakültesi Zemin Kat Kantin',
-        bulusmaTarihi: now.add(const Duration(hours: 4)),
-        durum: IlanDurumu.aktif,
-        olusturulmaTarihi: now.subtract(const Duration(hours: 1)),
-      ),
-
-      // Kayıp & Buluntu İlanları
-      Ilan(
-        id: 'ilan-4',
-        sahipId: '00000000-0000-0000-0000-000000000005',
-        kategoriId: 'kat-4',
-        baslik: 'Siyah Kablosuz Kulaklık Kutusu Kayıp',
-        aciklama: 'D204 nolu amfide masada unuttum, üzerinde gri çıkartma var. Görenlerin yazmasını rica ederim.',
-        tur: IlanTuru.kayip,
-        yer: 'Mühendislik D204 Amfisi',
-        bulusmaTarihi: null,
-        durum: IlanDurumu.aktif,
-        olusturulmaTarihi: now.subtract(const Duration(days: 1)),
-      ),
-      Ilan(
-        id: 'ilan-5',
-        sahipId: '00000000-0000-0000-0000-000000000001',
-        kategoriId: 'kat-5',
-        baslik: 'Yemekhanede Bulunan Öğrenci Kimlik Kartı',
-        aciklama: '1. kat turnikelerin hemen yanında bulundu, yemekhane danışmasına teslim edildi.',
-        tur: IlanTuru.buluntu,
-        yer: 'Merkez Yemekhane Turnikeleri',
-        bulusmaTarihi: null,
-        durum: IlanDurumu.cozuldu,
-        olusturulmaTarihi: now.subtract(const Duration(days: 2)),
-      ),
-      Ilan(
-        id: 'ilan-6',
-        sahipId: '00000000-0000-0000-0000-000000000006',
-        kategoriId: 'kat-6',
-        baslik: 'Mavi Spiral Defter ve Kalemlik Kayıp',
-        aciklama: 'Kütüphane girişindeki dinlenme koltuklarında unutulmuştur.',
-        tur: IlanTuru.kayip,
-        yer: 'Merkez Kütüphane Giriş Holü',
-        bulusmaTarihi: null,
-        durum: IlanDurumu.aktif,
-        olusturulmaTarihi: now.subtract(const Duration(hours: 8)),
-      ),
-    ]);
-
-    // Örnek Katılımlar
-    _katilimlar.addAll([
-      Katilim(
-        id: 'kat-1',
-        ilanId: 'ilan-1',
-        profilId: '00000000-0000-0000-0000-000000000001',
-        katilimTarihi: now.subtract(const Duration(hours: 2)),
-      ),
-      Katilim(
-        id: 'kat-2',
-        ilanId: 'ilan-1',
-        profilId: '00000000-0000-0000-0000-000000000003',
-        katilimTarihi: now.subtract(const Duration(hours: 1)),
-      ),
-      Katilim(
-        id: 'kat-3',
-        ilanId: 'ilan-2',
-        profilId: '00000000-0000-0000-0000-000000000001',
-        katilimTarihi: now.subtract(const Duration(hours: 4)),
-      ),
-    ]);
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

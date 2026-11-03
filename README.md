@@ -22,6 +22,15 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
   uygulamaya dönüşte rol yenileme ve oturum kaybında korunan içeriği kapatma.
   Rol doğrulaması sırasında mevcut sekme durumu korunur.
 
+### Üçüncü hafta — Berna: API bağlantısı
+
+- `/api/kategoriler` ve `/api/ilanlar` üzerinden gerçek veri yükleme.
+- İlan oluşturma, detay, güncelleme ve silme için tipli servis ve Provider bağlantısı.
+- Auth ile ortak API istemcisi, güncel Bearer belirteci ve hesap değişiminde veri temizliği.
+- API alan hataları, oturum/yetki hataları, silinmiş ilan, ağ hatası ve tekrar deneme.
+- Mevcut form ve detay ekranında CRUD çağrıları; güncelleme/silme yalnızca sahibine gösterilir.
+
+
 ## Uygulama ekranları
 
 - Açılış ve oturum durumuna göre yönlendirme.
@@ -32,8 +41,9 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
 - Profil bilgileri, ad soyad düzenleme, İlanlarım ve çıkış.
 - Yönetici paneli taslağı ve rol kontrollü rota erişimi.
 
-İlan ekranları `ListingsProvider` içindeki demo verileri kullanır. İlan verme,
-katılım ve şikâyet düğmeleri ilk hafta ekran iskeletinin parçalarıdır.
+İlanlar ve kategoriler ortak ASP.NET Core Web API üzerinden yüklenir.
+Oluşturma, detay okuma, güncelleme ve silme aynı Supabase verisi üzerinde çalışır.
+Katılım ve şikâyet düğmeleri sonraki haftaların ekran iskeletidir.
 
 ## Çalıştırma
 
@@ -72,6 +82,7 @@ flutter build apk --debug
 - [API servisleri](docs/hafta-01-api-servisi.md)
 - [Giriş ve profil](docs/hafta-02-auth-profil.md)
 - [Rol ve oturum kontrolü](docs/hafta-02-rol-ve-oturum.md)
+- [Üçüncü hafta ilan API bağlantısı ve doğrulama](docs/hafta-03-api-baglantisi.md)
 
 ## Ekip
 
