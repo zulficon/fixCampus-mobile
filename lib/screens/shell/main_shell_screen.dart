@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../providers/auth_provider.dart';
+import '../../routes/app_routes.dart';
 import '../lost_found/lost_found_feed_screen.dart';
 import '../listings/create_listing_screen.dart';
 import '../profile/profile_screen.dart';
@@ -31,6 +32,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          IconButton(
+            tooltip: 'İlanlarım',
+            icon: const Icon(Icons.article_outlined),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.myListings),
+          ),
+        ],
         title: Row(
           children: [
             const Text(

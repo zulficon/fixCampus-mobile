@@ -36,6 +36,12 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
   kategori-tür eşleşmesi ve sosyal ilan için gelecek tarih kontrolü; oluşturma/düzenleme formunda
   güncel oturum ve profil kontrolü; düzenleme/silmede ilan sahipliği denetimi.
 
+### Dördüncü hafta
+
+- **Zülfikar Durak:** Üst menüden açılan İlanlarım sayfası; yalnız güncel
+  kullanıcının ilanları, tarih sıralaması, yenileme, yükleme/hata/boş durumları
+  ve mevcut ilan detayına geçiş. Ortak API listesi ve oturum kontrolleri kullanılır.
+
 ## Uygulama ekranları
 
 - Açılış ve oturum durumuna göre yönlendirme.
@@ -95,6 +101,7 @@ Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 - [Giriş ve profil](docs/hafta-02-auth-profil.md)
 - [Rol ve oturum kontrolü](docs/hafta-02-rol-ve-oturum.md)
 - [İlan doğrulama ve sahiplik](docs/hafta-03-ilan-dogrulama.md)
+- [İlanlarım](docs/hafta-04-ilanlarim.md)
 - [Üçüncü hafta ilan API bağlantısı ve doğrulama](docs/hafta-03-api-baglantisi.md)
 
 ## Ekip
