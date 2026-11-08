@@ -6,6 +6,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/listings/create_listing_screen.dart';
 import '../screens/listings/listing_detail_screen.dart';
+import '../screens/listings/listing_search_screen.dart';
 import '../screens/shell/main_shell_screen.dart';
 import '../screens/splash/splash_screen.dart';
 
@@ -18,6 +19,7 @@ class AppRoutes {
   static const String createListing = '/create-listing';
   static const String listingDetail = '/listing-detail';
   static const String editListing = '/edit-listing';
+  static const String listingSearch = '/listing-search';
   static const String adminPanel = '/admin-panel';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -56,6 +58,11 @@ class AppRoutes {
           );
         }
         return _errorRoute('İlan parametresi eksik.');
+
+      case listingSearch:
+        return MaterialPageRoute(
+          builder: (_) => const AuthGuard(child: ListingSearchScreen()),
+        );
 
       case adminPanel:
         return MaterialPageRoute(

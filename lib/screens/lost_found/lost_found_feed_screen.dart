@@ -3,35 +3,96 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/listings_provider.dart';
 import '../../routes/app_routes.dart';
+import '../../utils/listing_search_filter.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/listing_card.dart';
+import '../../widgets/listing_search_bar.dart';
 import '../../widgets/listings_load_status.dart';
+import '../../widgets/pagination_controls.dart';
+import '../listings/listing_search_screen.dart';
 
-/// Sadeleştirilmiş Kayıp & Buluntu Akış Ekranı
+/// Kayıp & Buluntu Akış Ekranı (Tür/Kategori Filtreleme, Metin Arama ve Sayfalama)
 class LostFoundFeedScreen extends StatefulWidget {
-  const LostFoundFeedScreen({super.key});
+  const LostFoundFeedScreen({
+    super.key,
+    this.pageSize = ListingSearchFilter.defaultPageSize,
+  });
+
+  final int pageSize;
 
   @override
   State<LostFoundFeedScreen> createState() => _LostFoundFeedScreenState();
 }
 
 class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
+  final TextEditingController _searchController = TextEditingController();
   IlanTuru? _filterTur;
   String? _selectedCategoryId;
+  int _currentPage = 1;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool get _hasActiveFilters =>
+      _searchController.text.trim().isNotEmpty ||
+      _filterTur != null ||
+      _selectedCategoryId != null;
+
+  void _resetFilters() {
+    setState(() {
+      _searchController.clear();
+      _filterTur = null;
+      _selectedCategoryId = null;
+      _currentPage = 1;
+    });
+  }
+
+  void _selectTur(IlanTuru? tur, List<Kategori> allCategories) {
+    setState(() {
+      _filterTur = tur;
+      if (tur != null && _selectedCategoryId != null) {
+        final stillValid = allCategories.any(
+          (k) => k.id == _selectedCategoryId && k.tur == tur,
+        );
+        if (!stillValid) {
+          _selectedCategoryId = null;
+        }
+      }
+      _currentPage = 1;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final listingsProvider = context.watch<ListingsProvider>();
 
-    final categories = listingsProvider.kategoriler
-        .where((k) => k.tur == IlanTuru.kayip || k.tur == IlanTuru.buluntu)
-        .toList();
+    final categories = listingsProvider.kategoriler.where((k) {
+      final isLostFound =
+          k.tur == IlanTuru.kayip || k.tur == IlanTuru.buluntu;
+      return isLostFound && (_filterTur == null || k.tur == _filterTur);
+    }).toList();
 
-    var items = listingsProvider.getLostFoundListings(turFilter: _filterTur);
-    if (_selectedCategoryId != null) {
-      items = items.where((i) => i.kategoriId == _selectedCategoryId).toList();
-    }
+    final activeCategoryId =
+        categories.any((k) => k.id == _selectedCategoryId)
+        ? _selectedCategoryId
+        : null;
+
+    final filteredItems = ListingSearchFilter.filter(
+      listingsProvider.getLostFoundListings(turFilter: _filterTur),
+      query: _searchController.text,
+      kategoriId: activeCategoryId,
+      kategoriler: categories,
+    );
+
+    final pagination = ListingSearchFilter.paginate(
+      filteredItems,
+      page: _currentPage,
+      pageSize: widget.pageSize,
+    );
 
     return Scaffold(
       body: RefreshIndicator(
@@ -44,29 +105,80 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
             SliverToBoxAdapter(
               child: ListingsLoadStatus(provider: listingsProvider),
             ),
-            // Sade Başlık
-            const SliverToBoxAdapter(
+            // Başlık ve Detaylı Arama Geçişi
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Kayıp & Buluntu',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF18181B),
-                        letterSpacing: -0.4,
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Kayıp & Buluntu',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF18181B),
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Kayıp ve bulunan eşya bildirimleri',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF71717A),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Kayıp ve bulunan eşya bildirimleri',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF71717A)),
+                    IconButton(
+                      tooltip: 'Detaylı Arama',
+                      icon: const Icon(
+                        Icons.manage_search,
+                        color: Color(0xFF18181B),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => ListingSearchScreen(
+                              initialTur: _filterTur,
+                              initialCategoryId: activeCategoryId,
+                              initialQuery: _searchController.text,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
+              ),
+            ),
+
+            // Metin Arama Çubuğu
+            SliverToBoxAdapter(
+              child: ListingSearchBar(
+                controller: _searchController,
+                hintText: 'Kayıp veya buluntu eşya, konum ara...',
+                hasActiveFilters: _hasActiveFilters,
+                totalResults: pagination.totalItems,
+                onResetFilters: _resetFilters,
+                onChanged: (_) {
+                  setState(() {
+                    _currentPage = 1;
+                  });
+                },
+                onClear: () {
+                  setState(() {
+                    _searchController.clear();
+                    _currentPage = 1;
+                  });
+                },
               ),
             ),
 
@@ -89,23 +201,28 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
                         child: _SimpleSegment(
                           label: 'Tümü',
                           isSelected: _filterTur == null,
-                          onTap: () => setState(() => _filterTur = null),
+                          onTap: () =>
+                              _selectTur(null, listingsProvider.kategoriler),
                         ),
                       ),
                       Expanded(
                         child: _SimpleSegment(
                           label: 'Kayıp',
                           isSelected: _filterTur == IlanTuru.kayip,
-                          onTap: () =>
-                              setState(() => _filterTur = IlanTuru.kayip),
+                          onTap: () => _selectTur(
+                            IlanTuru.kayip,
+                            listingsProvider.kategoriler,
+                          ),
                         ),
                       ),
                       Expanded(
                         child: _SimpleSegment(
                           label: 'Bulunan',
                           isSelected: _filterTur == IlanTuru.buluntu,
-                          onTap: () =>
-                              setState(() => _filterTur = IlanTuru.buluntu),
+                          onTap: () => _selectTur(
+                            IlanTuru.buluntu,
+                            listingsProvider.kategoriler,
+                          ),
                         ),
                       ),
                     ],
@@ -127,18 +244,22 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
                   children: [
                     CategoryChip(
                       label: 'Tümü',
-                      isSelected: _selectedCategoryId == null,
-                      onTap: () => setState(() => _selectedCategoryId = null),
+                      isSelected: activeCategoryId == null,
+                      onTap: () => setState(() {
+                        _selectedCategoryId = null;
+                        _currentPage = 1;
+                      }),
                     ),
                     ...categories.map(
                       (cat) => CategoryChip(
                         label: cat.ad,
-                        isSelected: _selectedCategoryId == cat.id,
+                        isSelected: activeCategoryId == cat.id,
                         onTap: () {
                           setState(() {
-                            _selectedCategoryId = _selectedCategoryId == cat.id
+                            _selectedCategoryId = activeCategoryId == cat.id
                                 ? null
                                 : cat.id;
+                            _currentPage = 1;
                           });
                         },
                       ),
@@ -148,23 +269,26 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
               ),
             ),
 
-            // Liste
-            if (items.isEmpty &&
+            // Liste ve Sayfalama
+            if (pagination.items.isEmpty &&
                 !listingsProvider.isLoading &&
                 listingsProvider.error == null)
-              const SliverFillRemaining(
+              SliverFillRemaining(
+                hasScrollBody: false,
                 child: EmptyState(
                   icon: Icons.search_off_outlined,
                   title: 'İlan Bulunamadı',
                   description: 'Kriterlere uygun ilan bulunmuyor.',
+                  actionLabel: _hasActiveFilters ? 'Filtreleri Temizle' : null,
+                  onAction: _hasActiveFilters ? _resetFilters : null,
                 ),
               )
-            else
+            else ...[
               SliverPadding(
-                padding: const EdgeInsets.only(bottom: 24, top: 4),
+                padding: const EdgeInsets.only(bottom: 8, top: 4),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    final item = items[index];
+                    final item = pagination.items[index];
                     return ListingCard(
                       ilan: item,
                       onTap: () {
@@ -175,9 +299,20 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
                         );
                       },
                     );
-                  }, childCount: items.length),
+                  }, childCount: pagination.items.length),
                 ),
               ),
+              SliverToBoxAdapter(
+                child: PaginationControls(
+                  pagination: pagination,
+                  onPageChanged: (newPage) {
+                    setState(() {
+                      _currentPage = newPage;
+                    });
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ),

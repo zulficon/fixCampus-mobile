@@ -36,6 +36,12 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
   kategori-tür eşleşmesi ve sosyal ilan için gelecek tarih kontrolü; oluşturma/düzenleme formunda
   güncel oturum ve profil kontrolü; düzenleme/silmede ilan sahipliği denetimi.
 
+### Dördüncü hafta
+
+- **Berke Mahmut Acar:** Kategori filtreleme, Türkçe karakter duyarlı metin arama,
+  sayfalama (`PaginationControls`) ve oturum korumalı İlan Arama ekranı (`ListingSearchScreen`);
+  Sosyal Radar ve Kayıp-Buluntu akışlarına anlık arama, filtre sıfırlama ve sayfa geçişlerinin entegrasyonu.
+
 ## Uygulama ekranları
 
 - Açılış ve oturum durumuna göre yönlendirme.
@@ -96,6 +102,7 @@ Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 - [Rol ve oturum kontrolü](docs/hafta-02-rol-ve-oturum.md)
 - [İlan doğrulama ve sahiplik](docs/hafta-03-ilan-dogrulama.md)
 - [Üçüncü hafta ilan API bağlantısı ve doğrulama](docs/hafta-03-api-baglantisi.md)
+- [Arama ekranı, kategori filtreleme ve sayfalama](docs/hafta-04-arama-ve-sayfalama.md)
 
 ## Ekip
 

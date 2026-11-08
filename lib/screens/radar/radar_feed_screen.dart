@@ -4,21 +4,49 @@ import '../../models/models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/listings_provider.dart';
 import '../../routes/app_routes.dart';
+import '../../utils/listing_search_filter.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/listing_card.dart';
+import '../../widgets/listing_search_bar.dart';
 import '../../widgets/listings_load_status.dart';
+import '../../widgets/pagination_controls.dart';
+import '../listings/listing_search_screen.dart';
 
-/// Sadeleştirilmiş Sosyal Radar Akış Ekranı
+/// Sosyal Radar Akış Ekranı (Kategori Filtreleme, Metin Arama ve Sayfalama)
 class RadarFeedScreen extends StatefulWidget {
-  const RadarFeedScreen({super.key});
+  const RadarFeedScreen({
+    super.key,
+    this.pageSize = ListingSearchFilter.defaultPageSize,
+  });
+
+  final int pageSize;
 
   @override
   State<RadarFeedScreen> createState() => _RadarFeedScreenState();
 }
 
 class _RadarFeedScreenState extends State<RadarFeedScreen> {
+  final TextEditingController _searchController = TextEditingController();
   String? _selectedCategoryId;
+  int _currentPage = 1;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool get _hasActiveFilters =>
+      _searchController.text.trim().isNotEmpty || _selectedCategoryId != null;
+
+  void _resetFilters() {
+    setState(() {
+      _searchController.clear();
+      _selectedCategoryId = null;
+      _currentPage = 1;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +58,23 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
         .where((k) => k.tur == IlanTuru.sosyal)
         .toList();
 
-    var items = listingsProvider.radarListings;
-    if (_selectedCategoryId != null) {
-      items = items.where((i) => i.kategoriId == _selectedCategoryId).toList();
-    }
+    final activeCategoryId =
+        categories.any((k) => k.id == _selectedCategoryId)
+        ? _selectedCategoryId
+        : null;
+
+    final filteredItems = ListingSearchFilter.filter(
+      listingsProvider.radarListings,
+      query: _searchController.text,
+      kategoriId: activeCategoryId,
+      kategoriler: categories,
+    );
+
+    final pagination = ListingSearchFilter.paginate(
+      filteredItems,
+      page: _currentPage,
+      pageSize: widget.pageSize,
+    );
 
     return Scaffold(
       body: RefreshIndicator(
@@ -46,29 +87,80 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
             SliverToBoxAdapter(
               child: ListingsLoadStatus(provider: listingsProvider),
             ),
-            // Sade Başlık
-            const SliverToBoxAdapter(
+            // Başlık ve Gelişmiş Arama Geçişi
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Sosyal Radar',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF18181B),
-                        letterSpacing: -0.4,
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Sosyal Radar',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF18181B),
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Kampüsteki buluşma ve çalışma ilanları',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF71717A),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Kampüsteki buluşma ve çalışma ilanları',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF71717A)),
+                    IconButton(
+                      tooltip: 'Detaylı Arama',
+                      icon: const Icon(
+                        Icons.manage_search,
+                        color: Color(0xFF18181B),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => ListingSearchScreen(
+                              initialTur: IlanTuru.sosyal,
+                              initialCategoryId: activeCategoryId,
+                              initialQuery: _searchController.text,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
+              ),
+            ),
+
+            // Metin Arama Çubuğu
+            SliverToBoxAdapter(
+              child: ListingSearchBar(
+                controller: _searchController,
+                hintText: 'Sosyal ilanlarda başlık, açıklama veya yer ara...',
+                hasActiveFilters: _hasActiveFilters,
+                totalResults: pagination.totalItems,
+                onResetFilters: _resetFilters,
+                onChanged: (_) {
+                  setState(() {
+                    _currentPage = 1;
+                  });
+                },
+                onClear: () {
+                  setState(() {
+                    _searchController.clear();
+                    _currentPage = 1;
+                  });
+                },
               ),
             ),
 
@@ -85,22 +177,24 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
                   children: [
                     CategoryChip(
                       label: 'Tümü',
-                      isSelected: _selectedCategoryId == null,
+                      isSelected: activeCategoryId == null,
                       onTap: () {
                         setState(() {
                           _selectedCategoryId = null;
+                          _currentPage = 1;
                         });
                       },
                     ),
                     ...categories.map(
                       (cat) => CategoryChip(
                         label: cat.ad,
-                        isSelected: _selectedCategoryId == cat.id,
+                        isSelected: activeCategoryId == cat.id,
                         onTap: () {
                           setState(() {
-                            _selectedCategoryId = _selectedCategoryId == cat.id
+                            _selectedCategoryId = activeCategoryId == cat.id
                                 ? null
                                 : cat.id;
+                            _currentPage = 1;
                           });
                         },
                       ),
@@ -110,24 +204,28 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
               ),
             ),
 
-            // İlan Listesi
-            if (items.isEmpty &&
+            // İlan Listesi ve Sayfalama
+            if (pagination.items.isEmpty &&
                 !listingsProvider.isLoading &&
                 listingsProvider.error == null)
-              const SliverFillRemaining(
+              SliverFillRemaining(
+                hasScrollBody: false,
                 child: EmptyState(
                   icon: Icons.event_busy_outlined,
                   title: 'Buluşma Bulunamadı',
-                  description:
-                      'Seçilen kategoride henüz aktif bir buluşma bulunmuyor.',
+                  description: _hasActiveFilters
+                      ? 'Arama veya kategori kriterlerine uygun buluşma bulunmuyor.'
+                      : 'Seçilen kategoride henüz aktif bir buluşma bulunmuyor.',
+                  actionLabel: _hasActiveFilters ? 'Filtreleri Temizle' : null,
+                  onAction: _hasActiveFilters ? _resetFilters : null,
                 ),
               )
-            else
+            else ...[
               SliverPadding(
-                padding: const EdgeInsets.only(bottom: 24, top: 4),
+                padding: const EdgeInsets.only(bottom: 8, top: 4),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    final item = items[index];
+                    final item = pagination.items[index];
                     final isAttending = listingsProvider.isUserAttending(
                       item.id,
                       currentUserId,
@@ -146,9 +244,20 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
                         );
                       },
                     );
-                  }, childCount: items.length),
+                  }, childCount: pagination.items.length),
                 ),
               ),
+              SliverToBoxAdapter(
+                child: PaginationControls(
+                  pagination: pagination,
+                  onPageChanged: (newPage) {
+                    setState(() {
+                      _currentPage = newPage;
+                    });
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ),
