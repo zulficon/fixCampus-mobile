@@ -15,8 +15,8 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('tr_TR', null);
-  const url = String.fromEnvironment('SUPABASE_URL');
-  const key = String.fromEnvironment('SUPABASE_ANON_KEY');
+  const url = AppConstants.defaultSupabaseUrl;
+  const key = AppConstants.defaultSupabaseAnonKey;
   AuthService? service;
   ApiClient? api;
   if (url.isNotEmpty && key.isNotEmpty) {
@@ -24,13 +24,18 @@ Future<void> main() async {
       apiBaseUrl: AppConstants.defaultApiBaseUrl,
       supabaseUrl: url,
     );
-    await Supabase.initialize(
-      url: url,
-      publishableKey: key,
-      httpClient: authApi,
-    );
+    try {
+      await Supabase.initialize(
+        url: url,
+        publishableKey: key,
+        httpClient: authApi,
+      );
+    } catch (_) {
+      // Supabase hot-restart durumunda tekrar başlatma hatasını yoksay
+    }
     final client = Supabase.instance.client;
     api = ApiClient(
+      baseUrl: AppConstants.defaultApiBaseUrl,
       tokenProvider: () => client.auth.currentSession?.accessToken,
     );
     service = ApiAuthService(client, api, authApi);

@@ -64,6 +64,10 @@ Gereksinimler: Flutter >= 3.47, Dart >= 3.13, Android SDK ve Android cihaz
 veya emülatör. Doğrulamada Flutter 3.47.8 kullanılır. Profil ve ilan işlemleri için
 ortak ASP.NET Core Web API çalışmalıdır.
 
+Uygulama yerel geliştirme için hazır varsayılan ayarlara sahiptir (Chrome web için `http://localhost:5168`, Android emülatör için `http://10.0.2.2:5168`). Çift tıklayarak `run_phone.bat` veya doğrudan `flutter run` ile çalıştırılabilir.
+
+Özel parametrelerle çalıştırmak için:
+
 ```sh
 flutter pub get
 flutter run --dart-define=SUPABASE_URL=https://PROJE.supabase.co --dart-define=SUPABASE_ANON_KEY=PUBLIC_KEY --dart-define=API_BASE_URL=http://10.0.2.2:5168
