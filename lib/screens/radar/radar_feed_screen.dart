@@ -73,6 +73,13 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
         pageSize: widget.pageSize,
         activeSocialOnly: true,
       ),
+      onPageCorrected: (page) {
+        if (mounted) {
+          setState(() {
+            _currentPage = page;
+          });
+        }
+      },
       builder: (pagination, queryLoading, queryError, queryRefresh) {
         return Scaffold(
           body: RefreshIndicator(

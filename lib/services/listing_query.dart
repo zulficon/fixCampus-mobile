@@ -20,6 +20,16 @@ class ListingQuery {
   final bool lostFoundOnly;
   final bool activeSocialOnly;
 
+  ListingQuery copyWith({int? page}) => ListingQuery(
+    tur: tur,
+    kategoriId: kategoriId,
+    text: text,
+    page: page ?? this.page,
+    pageSize: pageSize,
+    lostFoundOnly: lostFoundOnly,
+    activeSocialOnly: activeSocialOnly,
+  );
+
   Map<String, dynamic> toQueryParameters() => {
     if (tur != null) 'tur': tur!.apiValue,
     if (kategoriId != null && kategoriId!.trim().isNotEmpty)

@@ -38,6 +38,10 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
 
 ### Dördüncü hafta
 
+- **Berna Kalkan:** Ortak API üzerinden tür/kategori/metin filtreleme ve sunucu
+  sayfalaması; üç ilan ekranının sorgu servisine bağlanması, toplam kayıt/sayfa
+  bilgisi, eski yanıt ve oturum koruması; silme sonrası geçersiz sayfadan son
+  geçerli sayfaya otomatik dönüş ve regresyon testleri.
 - **Berke Mahmut Acar:** Kategori filtreleme, Türkçe karakter duyarlı metin arama,
   sayfalama (`PaginationControls`) ve oturum korumalı İlan Arama ekranı (`ListingSearchScreen`);
   Sosyal Radar ve Kayıp-Buluntu akışlarına anlık arama, filtre sıfırlama ve sayfa geçişlerinin entegrasyonu.
@@ -98,6 +102,8 @@ ve [hafta 3 doğrulama belgesinde](docs/hafta-03-api-baglantisi.md) bulunur.
 Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 
 ## Teknik belgeler
+
+- [Dördüncü hafta — Berna: API sorguları ve ekran entegrasyonu](docs/hafta-04-berna-sorgular.md)
 
 - [Veri modelleri](docs/hafta-01-veri-modeli.md)
 - [Mobil uygulama iskeleti](docs/hafta-01-mobil-iskelet.md)

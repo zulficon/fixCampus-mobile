@@ -67,3 +67,15 @@ PostgreSQL kontrolü aynı ilanın MVC servisi ve mobil API sayfalı sorgusundan
 okunduğunu gerçek, geçici PostgreSQL veritabanında test eder. Canlı Supabase
 üzerinde şema/migration/ilişki ve SQL sorgu kontrolleri salt okunur çalıştırıldı;
 canlı uygulamada iki şifreli hesapla cihaz demosu ayrı bir kontroldür.
+
+## İnceleme düzeltmeleri — sayfa taşması
+
+Silme sonrası istenen sayfa son sayfanın dışına çıkmışsa ve toplam kayıt sıfır
+değilse `ServerListingResults` son geçerli sayfayı yeniden sorgular. Bu sırada
+filtreler/sayfa boyutu korunur. Ekranın sayfa durumu `onPageCorrected` ile
+güncellenir; yenileme eski sayfayı tekrar istemez. Her düzeltmede sayfa
+numarası küçülür; gerçek boş listede tekrar sorgu yapılmaz. Önceki arama veya
+hesap için başlayan düzeltmenin geciken yanıtı güncel sonucu değiştiremez.
+
+Regresyon testleri: son sayfa silinmesi, yenilemede düzeltilen sayfanın
+korunması, gerçek boş liste ve düzeltme sırasında tekrar küçülen sayfa sayısı.

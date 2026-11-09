@@ -13,10 +13,12 @@ class ServerListingResults extends StatefulWidget {
     required this.provider,
     required this.query,
     required this.builder,
+    this.onPageCorrected,
   });
 
   final ListingsProvider provider;
   final ListingQuery query;
+  final ValueChanged<int>? onPageCorrected;
   final Widget Function(
     ListingPaginationResult page,
     bool loading,
@@ -34,10 +36,11 @@ class _ServerListingResultsState extends State<ServerListingResults> {
   String? _error;
   bool _loading = true;
   int _request = 0;
+  int? _pageOverride;
   late String _signature;
 
   String get _currentSignature => jsonEncode([
-    widget.query.toQueryParameters(),
+    widget.query.copyWith(page: _pageOverride).toQueryParameters(),
     widget.provider.dataRevision,
     widget.provider.sessionRevision,
   ]);
@@ -52,6 +55,10 @@ class _ServerListingResultsState extends State<ServerListingResults> {
   @override
   void didUpdateWidget(covariant ServerListingResults oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (jsonEncode(oldWidget.query.toQueryParameters()) !=
+        jsonEncode(widget.query.toQueryParameters())) {
+      _pageOverride = null;
+    }
     final next = _currentSignature;
     if (next != _signature || widget.provider != oldWidget.provider) {
       _signature = next;
@@ -67,17 +74,34 @@ class _ServerListingResultsState extends State<ServerListingResults> {
     if (!mounted) return;
     final version = ++_request;
     final provider = widget.provider;
-    final query = widget.query;
+    var query = widget.query.copyWith(page: _pageOverride);
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final page = await provider.searchListings(query);
+      var page = await provider.searchListings(query);
       if (!mounted || version != _request) return;
+      // Silme sırasında son sayfa kaybolabilir. Hedef her turda küçülür;
+      // boş veri kümesinde veya geçerli bir sayfada yeniden sorgulama yapılmaz.
+      while (page.items.isEmpty &&
+          page.totalCount > 0 &&
+          page.totalPages >= 1 &&
+          query.page > page.totalPages) {
+        query = query.copyWith(page: page.totalPages);
+        page = await provider.searchListings(query);
+        if (!mounted || version != _request) return;
+      }
+      if (query.page != widget.query.page) {
+        _pageOverride = query.page;
+        _signature = _currentSignature;
+      }
       setState(() {
         _page = page;
       });
+      if (query.page != widget.query.page) {
+        widget.onPageCorrected?.call(query.page);
+      }
     } catch (error) {
       if (!mounted || version != _request) return;
       setState(() {

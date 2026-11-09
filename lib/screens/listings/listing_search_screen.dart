@@ -112,6 +112,13 @@ class _ListingSearchScreenState extends State<ListingSearchScreen> {
               pageSize: widget.pageSize,
               activeSocialOnly: true,
             ),
+            onPageCorrected: (page) {
+              if (mounted) {
+                setState(() {
+                  _currentPage = page;
+                });
+              }
+            },
             builder: (pagination, queryLoading, queryError, queryRefresh) {
               return Scaffold(
                 appBar: AppBar(

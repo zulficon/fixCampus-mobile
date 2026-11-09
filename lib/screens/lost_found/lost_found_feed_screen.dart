@@ -90,6 +90,13 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
         pageSize: widget.pageSize,
         lostFoundOnly: true,
       ),
+      onPageCorrected: (page) {
+        if (mounted) {
+          setState(() {
+            _currentPage = page;
+          });
+        }
+      },
       builder: (pagination, queryLoading, queryError, queryRefresh) {
         return Scaffold(
           body: RefreshIndicator(
