@@ -33,6 +33,10 @@ SaveListingRequest request({String title = 'Yeni ilan'}) => SaveListingRequest(
 );
 
 class FakeListingsService implements ListingsService {
+  @override
+  Future<ListingPage> searchListings(ListingQuery query) =>
+      throw UnsupportedError('Bu test için sayfalı yanıt tanımlanmadı.');
+
   List<Ilan> items = [Ilan.fromJson(listingJson())];
   final categories = [
     const Kategori(id: categoryId, ad: 'Spor', tur: IlanTuru.sosyal),

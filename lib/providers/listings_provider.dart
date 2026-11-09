@@ -88,6 +88,15 @@ class ListingsProvider extends ChangeNotifier {
     }
   }
 
+  /// Filtreli sonuçları ortak akış listesinin yerine yazmaz.
+  /// Ekran, filtre değişince ListingQuery(page: 1, ...) ile tekrar sorgular.
+  Future<ListingPage> searchListings(ListingQuery query) async {
+    final session = _sessionVersion;
+    final result = await _requireService().searchListings(query);
+    _checkSession(session);
+    return result;
+  }
+
   Future<Ilan> getListing(String id) async {
     final session = _sessionVersion;
     final data = _dataVersion;
