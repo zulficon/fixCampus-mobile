@@ -23,6 +23,8 @@ class ListingsProvider extends ChangeNotifier {
   List<Kategori> get kategoriler => List.unmodifiable(_kategoriler);
   List<Ilan> get ilanlar => List.unmodifiable(_ilanlar);
   List<Katilim> get katilimlar => List.unmodifiable(_katilimlar);
+  int get dataRevision => _dataVersion;
+  int get sessionRevision => _sessionVersion;
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get error => _error;
@@ -75,7 +77,10 @@ class ListingsProvider extends ChangeNotifier {
       ]);
       if (!_isCurrent(session) || load != _loadVersion) return false;
       _kategoriler = results[0] as List<Kategori>;
-      if (data == _dataVersion) _ilanlar = List.of(results[1] as List<Ilan>);
+      if (data == _dataVersion) {
+        _ilanlar = List.of(results[1] as List<Ilan>);
+        ++_dataVersion;
+      }
       return true;
     } catch (e) {
       if (_isCurrent(session) && load == _loadVersion) _error = _message(e);

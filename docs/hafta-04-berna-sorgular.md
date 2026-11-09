@@ -32,13 +32,19 @@ final result = await provider.searchListings(const ListingQuery(
 `ListingQuery`, `listings_service.dart` üzerinden dışa aktarılır.
 Filtre değişince ekranın `page: 1` ile sorgu yapması gerekir.
 
-## Mevcut ekranlarla ilişki
+## Ekran entegrasyonu
 
-Berke'nin arama/Radar/Kayıp-Buluntu ekranlarının mevcut cihaz üzerinde filtreleme
-akışı korunmuştur. Bu katkı Berna'nın servis ve sorgu görevini sağlar; yeni
-sayfalı servis henüz bu ekranlara bağlanmamıştır. Mevcut `getListings()` ve CRUD
-çağrılarının yanıt biçimi değişmez. Yeni servis, web reposundaki aynı hafta
-`/api/ilanlar/sayfali` değişikliği ile birlikte kullanılmalıdır.
+İlan Arama, Sosyal Radar ve Kayıp–Buluntu ekranları `ServerListingResults`
+üzerinden `ListingsProvider.searchListings` çağırır. Tür, kategori, metin ve
+sayfa sunucuya gönderilir; toplam kayıt/sayfa bilgisi API yanıtından alınır.
+Filtre değişince sayfa 1'e döner. Eski istek yanıtları yeni filtre veya hesabın
+sonuçlarını ezmez; ağ hatası boş liste olarak gösterilmez. Yenileme ve ilan
+mutasyonları sorguyu tekrar çalıştırır. Mevcut kategori çipleri/kartlar korunur.
+
+`kayipBuluntu=true` birleşik Kayıp–Buluntu akışını sosyal ilanlardan ayırır.
+`aktifSosyal=true` tamamlanan sosyal ilanları aktif akıştan çıkarır. Bu alanlar
+web API güncellemesiyle birlikte kullanılır. Türkçe harf, çok kelime ve kategori
+adında arama ortak API sorgularında da uygulanır.
 
 ## Doğrulama
 
@@ -51,3 +57,13 @@ sayfalı servis henüz bu ekranlara bağlanmamıştır. Mevcut `getListings()` v
 - İki hesapla emülatör/Supabase demosu bu katkıda yeniden yapılmadı.
 
 Veritabanı şeması veya gizli anahtar değişikliği gerekmez.
+
+## Ek doğrulamalar
+
+`server_listing_results_test.dart` eski yanıtların yeni aramayı ezmediğini ve
+ağ hatalarının boş sonuç olmadığını denetler. Mevcut üç ekran testleri artık
+sunucuya giden tür/sayfa/arama parametrelerini de doğrular. Web reposundaki
+PostgreSQL kontrolü aynı ilanın MVC servisi ve mobil API sayfalı sorgusundan
+okunduğunu gerçek, geçici PostgreSQL veritabanında test eder. Canlı Supabase
+üzerinde şema/migration/ilişki ve SQL sorgu kontrolleri salt okunur çalıştırıldı;
+canlı uygulamada iki şifreli hesapla cihaz demosu ayrı bir kontroldür.

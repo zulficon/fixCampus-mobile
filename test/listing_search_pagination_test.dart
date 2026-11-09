@@ -78,7 +78,11 @@ void main() {
       const Kategori(id: 'cat-spor', ad: 'Spor', tur: IlanTuru.sosyal),
       const Kategori(id: 'cat-ders', ad: 'Ders Çalışma', tur: IlanTuru.sosyal),
       const Kategori(id: 'cat-el', ad: 'Elektronik', tur: IlanTuru.kayip),
-      const Kategori(id: 'cat-kirtasiye', ad: 'Kırtasiye', tur: IlanTuru.buluntu),
+      const Kategori(
+        id: 'cat-kirtasiye',
+        ad: 'Kırtasiye',
+        tur: IlanTuru.buluntu,
+      ),
     ];
 
     final listings = [
@@ -120,48 +124,58 @@ void main() {
       ),
     ];
 
-    test('Türkçe karakter duyarlı metin araması başlık, açıklama ve yeri kapsar', () {
-      final byTurkishI = ListingSearchFilter.filter(
-        listings,
-        query: 'istatistik kütüphane',
-        kategoriler: categories,
-      );
-      expect(byTurkishI.map((e) => e.id), ['1']);
+    test(
+      'Türkçe karakter duyarlı metin araması başlık, açıklama ve yeri kapsar',
+      () {
+        final byTurkishI = ListingSearchFilter.filter(
+          listings,
+          query: 'istatistik kütüphane',
+          kategoriler: categories,
+        );
+        expect(byTurkishI.map((e) => e.id), ['1']);
 
-      final byUpperDotlessI = ListingSearchFilter.filter(
-        listings,
-        query: 'HALI SAHA',
-        kategoriler: categories,
-      );
-      expect(byUpperDotlessI.map((e) => e.id), ['2']);
+        final byUpperDotlessI = ListingSearchFilter.filter(
+          listings,
+          query: 'HALI SAHA',
+          kategoriler: categories,
+        );
+        expect(byUpperDotlessI.map((e) => e.id), ['2']);
 
-      final byCategoryName = ListingSearchFilter.filter(
-        listings,
-        query: 'elektronik',
-        kategoriler: categories,
-      );
-      expect(byCategoryName.map((e) => e.id), ['3']);
-    });
+        final byCategoryName = ListingSearchFilter.filter(
+          listings,
+          query: 'elektronik',
+          kategoriler: categories,
+        );
+        expect(byCategoryName.map((e) => e.id), ['3']);
+      },
+    );
 
-    test('Tür ve kategori filtreleri birlikte uygulanır ve tarihe göre sıralanır', () {
-      final socialOnly = ListingSearchFilter.filter(
-        listings,
-        tur: IlanTuru.sosyal,
-        kategoriler: categories,
-      );
-      expect(socialOnly.map((e) => e.id), ['2', '1']);
+    test(
+      'Tür ve kategori filtreleri birlikte uygulanır ve tarihe göre sıralanır',
+      () {
+        final socialOnly = ListingSearchFilter.filter(
+          listings,
+          tur: IlanTuru.sosyal,
+          kategoriler: categories,
+        );
+        expect(socialOnly.map((e) => e.id), ['2', '1']);
 
-      final socialSport = ListingSearchFilter.filter(
-        listings,
-        tur: IlanTuru.sosyal,
-        kategoriId: 'cat-spor',
-        kategoriler: categories,
-      );
-      expect(socialSport.map((e) => e.id), ['2']);
-    });
+        final socialSport = ListingSearchFilter.filter(
+          listings,
+          tur: IlanTuru.sosyal,
+          kategoriId: 'cat-spor',
+          kategoriler: categories,
+        );
+        expect(socialSport.map((e) => e.id), ['2']);
+      },
+    );
 
     test('Sayfalama doğru aralıkları ve sayfa sınırlarını hesaplar', () {
-      final page1 = ListingSearchFilter.paginate(listings, page: 1, pageSize: 2);
+      final page1 = ListingSearchFilter.paginate(
+        listings,
+        page: 1,
+        pageSize: 2,
+      );
       expect(page1.items.length, 2);
       expect(page1.currentPage, 1);
       expect(page1.totalPages, 2);
@@ -171,7 +185,11 @@ void main() {
       expect(page1.startItem, 1);
       expect(page1.endItem, 2);
 
-      final page2 = ListingSearchFilter.paginate(listings, page: 2, pageSize: 2);
+      final page2 = ListingSearchFilter.paginate(
+        listings,
+        page: 2,
+        pageSize: 2,
+      );
       expect(page2.items.length, 2);
       expect(page2.currentPage, 2);
       expect(page2.hasPrevious, isTrue);
@@ -179,10 +197,18 @@ void main() {
       expect(page2.startItem, 3);
       expect(page2.endItem, 4);
 
-      final clamped = ListingSearchFilter.paginate(listings, page: 99, pageSize: 2);
+      final clamped = ListingSearchFilter.paginate(
+        listings,
+        page: 99,
+        pageSize: 2,
+      );
       expect(clamped.currentPage, 2);
 
-      final empty = ListingSearchFilter.paginate(const [], page: 1, pageSize: 5);
+      final empty = ListingSearchFilter.paginate(
+        const [],
+        page: 1,
+        pageSize: 5,
+      );
       expect(empty.items, isEmpty);
       expect(empty.currentPage, 1);
       expect(empty.totalPages, 1);
@@ -308,6 +334,10 @@ void main() {
 
         // İlk sayfada 2 sosyal ilan görünür, 3. ilan 2. sayfadadır
         expect(find.text('Basketbol Turnuvası'), findsOneWidget);
+        expect(service.queries.last.tur, IlanTuru.sosyal);
+        expect(service.queries.last.page, 1);
+        expect(service.queries.last.pageSize, 2);
+        expect(service.queries.last.activeSocialOnly, isTrue);
         expect(find.text('Algoritma Çalışma Grubu'), findsOneWidget);
         expect(find.text('Sabah Koşusu'), findsNothing);
         expect(find.text('Sayfa 1 / 2'), findsOneWidget);
@@ -320,6 +350,7 @@ void main() {
         expect(find.text('Sabah Koşusu'), findsOneWidget);
         expect(find.text('Basketbol Turnuvası'), findsNothing);
         expect(find.text('Sayfa 2 / 2'), findsOneWidget);
+        expect(service.queries.last.page, 2);
 
         // Arama yapılınca sayfa 1'e döner ve eşleşen kayıt gösterilir
         await tester.enterText(find.byType(TextField), 'Algoritma');
@@ -327,6 +358,8 @@ void main() {
 
         expect(find.text('Algoritma Çalışma Grubu'), findsOneWidget);
         expect(find.text('1 ilan bulundu'), findsOneWidget);
+        expect(service.queries.last.text, 'Algoritma');
+        expect(service.queries.last.page, 1);
 
         // Filtreleri temizle
         await tester.tap(find.text('Filtreleri Temizle'));
@@ -344,6 +377,7 @@ void main() {
 
         expect(find.text('Kayıp AirPods Kulaklık'), findsOneWidget);
         expect(find.text('Bulunan Öğrenci Kimlik Kartı'), findsOneWidget);
+        expect(service.queries.last.lostFoundOnly, isTrue);
 
         // Kayıp segmentini ve Elektronik kategorisini seç
         await tester.tap(find.text('Kayıp').first);
@@ -400,4 +434,3 @@ void main() {
     );
   });
 }
-

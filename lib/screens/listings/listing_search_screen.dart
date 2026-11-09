@@ -9,7 +9,8 @@ import '../../widgets/category_chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/listing_card.dart';
 import '../../widgets/listing_search_bar.dart';
-import '../../widgets/listings_load_status.dart';
+import '../../widgets/server_listing_results.dart';
+import '../../services/listings_service.dart';
 import '../../widgets/pagination_controls.dart';
 import '../../widgets/role_session_guard.dart';
 
@@ -101,241 +102,245 @@ class _ListingSearchScreenState extends State<ListingSearchScreen> {
               ? _selectedCategoryId
               : null;
 
-          final baseItems = listingsProvider.ilanlar
-              .where(
-                (i) =>
-                    i.tur != IlanTuru.sosyal || i.durum == IlanDurumu.aktif,
-              )
-              .toList();
-
-          final filteredItems = ListingSearchFilter.filter(
-            baseItems,
-            query: _searchController.text,
-            tur: _selectedTur,
-            kategoriId: activeCategoryId,
-            kategoriler: listingsProvider.kategoriler,
-          );
-
-          final pagination = ListingSearchFilter.paginate(
-            filteredItems,
-            page: _currentPage,
-            pageSize: widget.pageSize,
-          );
-
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('İlan Arama'),
-              actions: [
-                IconButton(
-                  tooltip: 'Yenile',
-                  icon: const Icon(Icons.refresh),
-                  onPressed: listingsProvider.isLoading
-                      ? null
-                      : () => listingsProvider.load(),
-                ),
-              ],
+          return ServerListingResults(
+            provider: listingsProvider,
+            query: ListingQuery(
+              tur: _selectedTur,
+              kategoriId: activeCategoryId,
+              text: _searchController.text,
+              page: _currentPage,
+              pageSize: widget.pageSize,
+              activeSocialOnly: true,
             ),
-            body: RefreshIndicator(
-              onRefresh: () async {
-                await listingsProvider.load();
-              },
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: ListingsLoadStatus(provider: listingsProvider),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: ListingSearchBar(
-                        controller: _searchController,
-                        hintText:
-                            'Başlık, açıklama, konum veya kategori ara...',
-                        hasActiveFilters: _hasActiveFilters,
-                        totalResults: pagination.totalItems,
-                        onResetFilters: _resetFilters,
-                        onChanged: (_) {
-                          setState(() {
-                            _currentPage = 1;
-                          });
-                        },
-                        onClear: () {
-                          setState(() {
-                            _searchController.clear();
-                            _currentPage = 1;
-                          });
-                        },
-                      ),
+            builder: (pagination, queryLoading, queryError, queryRefresh) {
+              return Scaffold(
+                appBar: AppBar(
+                  title: const Text('İlan Arama'),
+                  actions: [
+                    IconButton(
+                      tooltip: 'Yenile',
+                      icon: const Icon(Icons.refresh),
+                      onPressed: listingsProvider.isLoading
+                          ? null
+                          : queryRefresh,
                     ),
-                  ),
-
-                  // İlan Türü Seçici
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF4F4F5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.all(3),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _SearchTypeSegment(
-                                label: 'Tümü',
-                                isSelected: _selectedTur == null,
-                                onTap: () => _selectTur(
-                                  null,
-                                  listingsProvider.kategoriler,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: _SearchTypeSegment(
-                                label: 'Sosyal',
-                                isSelected: _selectedTur == IlanTuru.sosyal,
-                                onTap: () => _selectTur(
-                                  IlanTuru.sosyal,
-                                  listingsProvider.kategoriler,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: _SearchTypeSegment(
-                                label: 'Kayıp',
-                                isSelected: _selectedTur == IlanTuru.kayip,
-                                onTap: () => _selectTur(
-                                  IlanTuru.kayip,
-                                  listingsProvider.kategoriler,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: _SearchTypeSegment(
-                                label: 'Buluntu',
-                                isSelected: _selectedTur == IlanTuru.buluntu,
-                                onTap: () => _selectTur(
-                                  IlanTuru.buluntu,
-                                  listingsProvider.kategoriler,
-                                ),
-                              ),
-                            ),
-                          ],
+                  ],
+                ),
+                body: RefreshIndicator(
+                  onRefresh: () async {
+                    await queryRefresh();
+                  },
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: ListingQueryStatus(
+                          loading: queryLoading || listingsProvider.isLoading,
+                          error: queryError ?? listingsProvider.error,
+                          onRetry: queryRefresh,
                         ),
                       ),
-                    ),
-                  ),
-
-                  // Kategori Filtreleme Çipleri
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 48,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        children: [
-                          CategoryChip(
-                            label: 'Tümü',
-                            isSelected: activeCategoryId == null,
-                            onTap: () {
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: ListingSearchBar(
+                            controller: _searchController,
+                            hintText:
+                                'Başlık, açıklama, konum veya kategori ara...',
+                            hasActiveFilters: _hasActiveFilters,
+                            totalResults: pagination.totalItems,
+                            onResetFilters: _resetFilters,
+                            onChanged: (_) {
                               setState(() {
-                                _selectedCategoryId = null;
+                                _currentPage = 1;
+                              });
+                            },
+                            onClear: () {
+                              setState(() {
+                                _searchController.clear();
                                 _currentPage = 1;
                               });
                             },
                           ),
-                          ...availableCategories.map(
-                            (cat) => CategoryChip(
-                              label: cat.ad,
-                              isSelected: activeCategoryId == cat.id,
-                              onTap: () {
-                                setState(() {
-                                  _selectedCategoryId =
-                                      activeCategoryId == cat.id
-                                      ? null
-                                      : cat.id;
-                                  _currentPage = 1;
-                                });
-                              },
+                        ),
+                      ),
+
+                      // İlan Türü Seçici
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4F4F5),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.all(3),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _SearchTypeSegment(
+                                    label: 'Tümü',
+                                    isSelected: _selectedTur == null,
+                                    onTap: () => _selectTur(
+                                      null,
+                                      listingsProvider.kategoriler,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _SearchTypeSegment(
+                                    label: 'Sosyal',
+                                    isSelected: _selectedTur == IlanTuru.sosyal,
+                                    onTap: () => _selectTur(
+                                      IlanTuru.sosyal,
+                                      listingsProvider.kategoriler,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _SearchTypeSegment(
+                                    label: 'Kayıp',
+                                    isSelected: _selectedTur == IlanTuru.kayip,
+                                    onTap: () => _selectTur(
+                                      IlanTuru.kayip,
+                                      listingsProvider.kategoriler,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _SearchTypeSegment(
+                                    label: 'Buluntu',
+                                    isSelected:
+                                        _selectedTur == IlanTuru.buluntu,
+                                    onTap: () => _selectTur(
+                                      IlanTuru.buluntu,
+                                      listingsProvider.kategoriler,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
 
-                  // Sonuç Listesi veya Boş Durum
-                  if (pagination.items.isEmpty &&
-                      !listingsProvider.isLoading &&
-                      listingsProvider.error == null)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyState(
-                        icon: Icons.search_off_outlined,
-                        title: _hasActiveFilters
-                            ? 'Eşleşen İlan Bulunamadı'
-                            : 'İlan Bulunamadı',
-                        description: _hasActiveFilters
-                            ? 'Arama veya kategori filtrelerine uygun sonuç yok.'
-                            : 'Henüz yayınlanmış bir ilan bulunmuyor.',
-                        actionLabel: _hasActiveFilters
-                            ? 'Filtreleri Temizle'
-                            : null,
-                        onAction: _hasActiveFilters ? _resetFilters : null,
-                      ),
-                    )
-                  else ...[
-                    SliverPadding(
-                      padding: const EdgeInsets.only(top: 4, bottom: 8),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final item = pagination.items[index];
-                          final isSocial = item.tur == IlanTuru.sosyal;
-                          return ListingCard(
-                            ilan: item,
-                            attendanceCount: isSocial
-                                ? listingsProvider.getAttendanceCount(item.id)
-                                : 0,
-                            isAttending:
-                                isSocial &&
-                                currentUserId.isNotEmpty &&
-                                listingsProvider.isUserAttending(
-                                  item.id,
-                                  currentUserId,
+                      // Kategori Filtreleme Çipleri
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 48,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            children: [
+                              CategoryChip(
+                                label: 'Tümü',
+                                isSelected: activeCategoryId == null,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedCategoryId = null;
+                                    _currentPage = 1;
+                                  });
+                                },
+                              ),
+                              ...availableCategories.map(
+                                (cat) => CategoryChip(
+                                  label: cat.ad,
+                                  isSelected: activeCategoryId == cat.id,
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedCategoryId =
+                                          activeCategoryId == cat.id
+                                          ? null
+                                          : cat.id;
+                                      _currentPage = 1;
+                                    });
+                                  },
                                 ),
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                AppRoutes.listingDetail,
-                                arguments: item,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Sonuç Listesi veya Boş Durum
+                      if (pagination.items.isEmpty &&
+                          !queryLoading &&
+                          queryError == null &&
+                          !listingsProvider.isLoading &&
+                          listingsProvider.error == null)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: EmptyState(
+                            icon: Icons.search_off_outlined,
+                            title: _hasActiveFilters
+                                ? 'Eşleşen İlan Bulunamadı'
+                                : 'İlan Bulunamadı',
+                            description: _hasActiveFilters
+                                ? 'Arama veya kategori filtrelerine uygun sonuç yok.'
+                                : 'Henüz yayınlanmış bir ilan bulunmuyor.',
+                            actionLabel: _hasActiveFilters
+                                ? 'Filtreleri Temizle'
+                                : null,
+                            onAction: _hasActiveFilters ? _resetFilters : null,
+                          ),
+                        )
+                      else ...[
+                        SliverPadding(
+                          padding: const EdgeInsets.only(top: 4, bottom: 8),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final item = pagination.items[index];
+                              final isSocial = item.tur == IlanTuru.sosyal;
+                              return ListingCard(
+                                ilan: item,
+                                attendanceCount: isSocial
+                                    ? listingsProvider.getAttendanceCount(
+                                        item.id,
+                                      )
+                                    : 0,
+                                isAttending:
+                                    isSocial &&
+                                    currentUserId.isNotEmpty &&
+                                    listingsProvider.isUserAttending(
+                                      item.id,
+                                      currentUserId,
+                                    ),
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.listingDetail,
+                                    arguments: item,
+                                  );
+                                },
                               );
+                            }, childCount: pagination.items.length),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: PaginationControls(
+                            pagination: pagination,
+                            onPageChanged: (newPage) {
+                              setState(() {
+                                _currentPage = newPage;
+                              });
                             },
-                          );
-                        }, childCount: pagination.items.length),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: PaginationControls(
-                        pagination: pagination,
-                        onPageChanged: (newPage) {
-                          setState(() {
-                            _currentPage = newPage;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -378,4 +383,3 @@ class _SearchTypeSegment extends StatelessWidget {
     );
   }
 }
-

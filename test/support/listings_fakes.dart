@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:fixcampus_mobile/models/models.dart';
+import 'package:fixcampus_mobile/utils/listing_search_filter.dart';
 import 'package:fixcampus_mobile/services/listings_service.dart';
 
 const ownerId = '00000000-0000-0000-0000-000000000001';
@@ -33,9 +34,41 @@ SaveListingRequest request({String title = 'Yeni ilan'}) => SaveListingRequest(
 );
 
 class FakeListingsService implements ListingsService {
+  final queries = <ListingQuery>[];
   @override
-  Future<ListingPage> searchListings(ListingQuery query) =>
-      throw UnsupportedError('Bu test için sayfalı yanıt tanımlanmadı.');
+  Future<ListingPage> searchListings(ListingQuery query) async {
+    check();
+    queries.add(query);
+    final filtered = ListingSearchFilter.filter(
+      items
+          .where(
+            (item) =>
+                item.durum != IlanDurumu.gizli &&
+                (!query.lostFoundOnly || item.tur != IlanTuru.sosyal) &&
+                (!query.activeSocialOnly ||
+                    item.tur != IlanTuru.sosyal ||
+                    item.durum == IlanDurumu.aktif),
+          )
+          .toList(),
+      query: query.text ?? '',
+      tur: query.tur,
+      kategoriId: query.kategoriId,
+      kategoriler: categories,
+    );
+    final params = query.toQueryParameters();
+    final page = params['sayfa'] as int;
+    final size = params['sayfaBoyutu'] as int;
+    final totalPages = filtered.isEmpty
+        ? 1
+        : (filtered.length + size - 1) ~/ size;
+    return ListingPage(
+      items: filtered.skip((page - 1) * size).take(size).toList(),
+      totalCount: filtered.length,
+      page: page,
+      pageSize: size,
+      totalPages: totalPages,
+    );
+  }
 
   List<Ilan> items = [Ilan.fromJson(listingJson())];
   final categories = [

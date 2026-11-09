@@ -8,6 +8,8 @@ class ListingQuery {
     this.text,
     this.page = 1,
     this.pageSize = 12,
+    this.lostFoundOnly = false,
+    this.activeSocialOnly = false,
   });
 
   final IlanTuru? tur;
@@ -15,12 +17,16 @@ class ListingQuery {
   final String? text;
   final int page;
   final int pageSize;
+  final bool lostFoundOnly;
+  final bool activeSocialOnly;
 
   Map<String, dynamic> toQueryParameters() => {
     if (tur != null) 'tur': tur!.apiValue,
     if (kategoriId != null && kategoriId!.trim().isNotEmpty)
       'kategoriId': kategoriId!.trim(),
     if (text != null && text!.trim().isNotEmpty) 'q': text!.trim(),
+    if (lostFoundOnly) 'kayipBuluntu': true,
+    if (activeSocialOnly) 'aktifSosyal': true,
     'sayfa': page < 1 ? 1 : page,
     'sayfaBoyutu': pageSize < 1 ? 12 : pageSize.clamp(1, 50),
   };
