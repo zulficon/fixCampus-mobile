@@ -10,6 +10,7 @@ import 'package:fixcampus_mobile/providers/listings_provider.dart';
 import 'package:fixcampus_mobile/routes/app_routes.dart';
 import 'package:fixcampus_mobile/screens/listings/my_listings_screen.dart';
 import 'package:fixcampus_mobile/screens/shell/main_shell_screen.dart';
+import 'package:fixcampus_mobile/screens/profile/profile_screen.dart';
 import 'package:fixcampus_mobile/services/api_exception.dart';
 import 'package:fixcampus_mobile/services/listings_service.dart';
 import 'package:fixcampus_mobile/services/local_profile_storage.dart';
@@ -214,6 +215,125 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(MyListingsScreen), findsOneWidget);
     expect(find.text('1 ilan'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final entry in <IlanTuru, String>{
+    IlanTuru.sosyal: 'Sosyal',
+    IlanTuru.kayip: 'Kayıp',
+    IlanTuru.buluntu: 'Buluntu',
+  }.entries) {
+    testWidgets(
+      '${entry.value} filtresi yalnız kendi uygun ilanlarını gösterir',
+      (tester) async {
+        service.items = [
+          for (final type in IlanTuru.values)
+            Ilan.fromJson({
+              ...listingJson(id: type.name),
+              'tur': type.apiValue,
+            }),
+          Ilan.fromJson({
+            ...listingJson(id: 'foreign'),
+            'sahipId': 'other',
+            'tur': entry.key.apiValue,
+          }),
+        ];
+        await mount(tester);
+        await tester.tap(find.widgetWithText(ChoiceChip, entry.value));
+        await tester.pumpAndSettle();
+        expect(cards(tester).map((c) => c.ilan.id), [entry.key.name]);
+        expect(find.text('1 ilan'), findsOneWidget);
+        await tester.tap(find.widgetWithText(ChoiceChip, 'Tümü'));
+        await tester.pumpAndSettle();
+        expect(cards(tester), hasLength(3));
+        expect(find.text('3 ilan'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'Tür filtresindeki boş sonuç hesabın tamamen boş olmasıyla karıştırılmaz',
+    (tester) async {
+      await mount(tester);
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Kayıp'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bu türde ilanınız yok'), findsOneWidget);
+      expect(find.text('Henüz ilanınız yok'), findsNothing);
+      expect(cards(tester), isEmpty);
+    },
+  );
+
+  testWidgets('Yenileme seçili tür filtresini korur', (tester) async {
+    await mount(tester);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Kayıp'));
+    await tester.pumpAndSettle();
+    service.items.add(
+      Ilan.fromJson({...listingJson(id: 'lost'), 'tur': 'Kayip'}),
+    );
+    await tester.tap(find.byTooltip('İlanlarımı yenile'));
+    await tester.pumpAndSettle();
+    expect(cards(tester).single.ilan.id, 'lost');
+    expect(
+      tester
+          .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Kayıp'))
+          .selected,
+      isTrue,
+    );
+  });
+
+  testWidgets(
+    'Hesap değişiminde tür filtresi sıfırlanır ve önceki sahip gizlenir',
+    (tester) async {
+      service.items.add(
+        Ilan.fromJson({
+          ...listingJson(id: 'other-lost'),
+          'sahipId': 'other',
+          'tur': 'Kayip',
+        }),
+      );
+      await mount(tester);
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Sosyal'));
+      await tester.pumpAndSettle();
+      authService.userId = 'other';
+      await auth.initialize();
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Tümü'))
+            .selected,
+        isTrue,
+      );
+      expect(cards(tester).single.ilan.id, 'other-lost');
+    },
+  );
+
+  testWidgets('Profilde Tümünü gör gerçek korumalı İlanlarım sayfasını açar', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await listings.load();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: auth),
+          ChangeNotifierProvider.value(value: listings),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const ProfileScreen(),
+          onGenerateRoute: AppRoutes.onGenerateRoute,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Tümünü gör'));
+    await tester.tap(find.text('Tümünü gör'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MyListingsScreen), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'Tümü'), findsOneWidget);
+    expect(cards(tester), hasLength(1));
     expect(tester.takeException(), isNull);
   });
 }

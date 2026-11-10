@@ -40,7 +40,15 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
 
 - **Zülfikar Durak:** Üst menüden açılan İlanlarım sayfası; yalnız güncel
   kullanıcının ilanları, tarih sıralaması, yenileme, yükleme/hata/boş durumları
-  ve mevcut ilan detayına geçiş. Ortak API listesi ve oturum kontrolleri kullanılır.
+  ve mevcut ilan detayına geçiş; Tümü/Sosyal/Kayıp/Buluntu filtresi ve Profil
+  ekranından Tümünü gör bağlantısı. Ortak API listesi ve oturum kontrolleri kullanılır.
+- **Berna Kalkan:** Ortak API üzerinden tür/kategori/metin filtreleme ve sunucu
+  sayfalaması; üç ilan ekranının sorgu servisine bağlanması, toplam kayıt/sayfa
+  bilgisi, eski yanıt ve oturum koruması; silme sonrası geçersiz sayfadan son
+  geçerli sayfaya otomatik dönüş ve regresyon testleri.
+- **Berke Mahmut Acar:** Kategori filtreleme, Türkçe karakter duyarlı metin arama,
+  sayfalama (`PaginationControls`) ve oturum korumalı İlan Arama ekranı (`ListingSearchScreen`);
+  Sosyal Radar ve Kayıp-Buluntu akışlarına anlık arama, filtre sıfırlama ve sayfa geçişlerinin entegrasyonu.
 
 ## Uygulama ekranları
 
@@ -63,6 +71,10 @@ Katılım ve şikâyet düğmeleri sonraki haftaların ekran iskeletidir.
 Gereksinimler: Flutter >= 3.47, Dart >= 3.13, Android SDK ve Android cihaz
 veya emülatör. Doğrulamada Flutter 3.47.8 kullanılır. Profil ve ilan işlemleri için
 ortak ASP.NET Core Web API çalışmalıdır.
+
+Uygulama yerel geliştirme için hazır varsayılan ayarlara sahiptir (Chrome web için `http://localhost:5168`, Android emülatör için `http://10.0.2.2:5168`). Çift tıklayarak `run_phone.bat` veya doğrudan `flutter run` ile çalıştırılabilir.
+
+Özel parametrelerle çalıştırmak için:
 
 ```sh
 flutter pub get
@@ -95,6 +107,8 @@ Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 
 ## Teknik belgeler
 
+- [Dördüncü hafta — Berna: API sorguları ve ekran entegrasyonu](docs/hafta-04-berna-sorgular.md)
+
 - [Veri modelleri](docs/hafta-01-veri-modeli.md)
 - [Mobil uygulama iskeleti](docs/hafta-01-mobil-iskelet.md)
 - [API servisleri](docs/hafta-01-api-servisi.md)
@@ -103,6 +117,7 @@ Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 - [İlan doğrulama ve sahiplik](docs/hafta-03-ilan-dogrulama.md)
 - [İlanlarım](docs/hafta-04-ilanlarim.md)
 - [Üçüncü hafta ilan API bağlantısı ve doğrulama](docs/hafta-03-api-baglantisi.md)
+- [Arama ekranı, kategori filtreleme ve sayfalama](docs/hafta-04-arama-ve-sayfalama.md)
 
 ## Ekip
 

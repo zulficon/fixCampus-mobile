@@ -298,12 +298,14 @@ class ProfileScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'İlanlarım',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF18181B),
+                  const Expanded(
+                    child: Text(
+                      'İlanlarım',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF18181B),
+                      ),
                     ),
                   ),
                   Text(
@@ -312,6 +314,11 @@ class ProfileScreen extends StatelessWidget {
                       fontSize: 12,
                       color: Color(0xFF71717A),
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.myListings),
+                    child: const Text('Tümünü gör'),
                   ),
                 ],
               ),

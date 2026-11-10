@@ -4,6 +4,9 @@ import '../core/constants/api_endpoints.dart';
 import '../core/network/api_client.dart';
 import '../models/models.dart';
 import 'api_exception.dart';
+import 'listing_query.dart';
+
+export 'listing_query.dart';
 
 /// fixCampus.Web SaveListingRequest. Kimlik, sahiplik ve durum sunucuya aittir.
 class SaveListingRequest {
@@ -36,6 +39,8 @@ class SaveListingRequest {
 abstract class ListingsService {
   Future<List<Kategori>> getCategories();
   Future<List<Ilan>> getListings();
+
+  Future<ListingPage> searchListings(ListingQuery query);
   Future<Ilan> getListing(String id);
   Future<Ilan> createListing(SaveListingRequest request);
   Future<Ilan> updateListing(String id, SaveListingRequest request);
@@ -69,6 +74,16 @@ class ApiListingsService implements ListingsService {
   Future<List<Ilan>> getListings() => _request(
     () => api.dio.get<Object>(ApiEndpoints.listings),
     (data) => _list(data, Ilan.fromJson),
+    200,
+  );
+
+  @override
+  Future<ListingPage> searchListings(ListingQuery query) => _request(
+    () => api.dio.get<Object>(
+      '${ApiEndpoints.listings}/sayfali',
+      queryParameters: query.toQueryParameters(),
+    ),
+    (data) => ListingPage.fromJson(_object(data)),
     200,
   );
 

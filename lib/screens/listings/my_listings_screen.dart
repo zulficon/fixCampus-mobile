@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/models.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/listings_provider.dart';
@@ -24,6 +25,19 @@ class _MyListingsContent extends StatefulWidget {
 }
 
 class _MyListingsContentState extends State<_MyListingsContent> {
+  IlanTuru? _type;
+  String? _profileId;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final id = context.watch<AuthProvider>().currentUser?.id;
+    if (_profileId != id) {
+      _profileId = id;
+      _type = null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -38,11 +52,13 @@ class _MyListingsContentState extends State<_MyListingsContent> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final provider = context.watch<ListingsProvider>();
-    final items = provider.getUserListings(auth.currentUser!.id)
-      ..sort((a, b) {
-        final date = b.olusturulmaTarihi.compareTo(a.olusturulmaTarihi);
-        return date != 0 ? date : a.id.compareTo(b.id);
-      });
+    final ownItems = provider.getUserListings(auth.currentUser!.id);
+    final items =
+        ownItems.where((item) => _type == null || item.tur == _type).toList()
+          ..sort((a, b) {
+            final date = b.olusturulmaTarihi.compareTo(a.olusturulmaTarihi);
+            return date != 0 ? date : a.id.compareTo(b.id);
+          });
     final error = provider.error;
     return Scaffold(
       appBar: AppBar(
@@ -62,6 +78,26 @@ class _MyListingsContentState extends State<_MyListingsContent> {
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final entry in const <IlanTuru?, String>{
+                    null: 'Tümü',
+                    IlanTuru.sosyal: 'Sosyal',
+                    IlanTuru.kayip: 'Kayıp',
+                    IlanTuru.buluntu: 'Buluntu',
+                  }.entries)
+                    ChoiceChip(
+                      label: Text(entry.value),
+                      selected: _type == entry.key,
+                      onSelected: (_) => setState(() => _type = entry.key),
+                    ),
+                ],
+              ),
+            ),
             if (provider.isLoading) const LinearProgressIndicator(),
             if (error != null)
               Padding(
@@ -83,9 +119,17 @@ class _MyListingsContentState extends State<_MyListingsContent> {
                   children: [
                     const Icon(Icons.post_add_outlined, size: 40),
                     const SizedBox(height: 12),
-                    const Text('Henüz ilanınız yok'),
+                    Text(
+                      ownItems.isEmpty
+                          ? 'Henüz ilanınız yok'
+                          : 'Bu türde ilanınız yok',
+                    ),
                     const SizedBox(height: 8),
-                    const Text('Oluşturduğunuz ilanlar burada listelenir.'),
+                    Text(
+                      ownItems.isEmpty
+                          ? 'Oluşturduğunuz ilanlar burada listelenir.'
+                          : 'Diğer ilanlarınız için Tümü filtresini seçin.',
+                    ),
                     TextButton(
                       onPressed: () =>
                           Navigator.pushNamed(context, AppRoutes.createListing),
