@@ -50,6 +50,12 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
   sayfalama (`PaginationControls`) ve oturum korumalı İlan Arama ekranı (`ListingSearchScreen`);
   Sosyal Radar ve Kayıp-Buluntu akışlarına anlık arama, filtre sıfırlama ve sayfa geçişlerinin entegrasyonu.
 
+### Beşinci hafta
+
+- **Zülfikar Durak:** Sosyal ilan süre kuralı; Radar ve Arama ekranlarında süre
+  dolunca API listesini otomatik yenileme, uygulamaya dönüşte yeniden kontrol ve
+  detay ekranında süresi dolmuş buluşmaya katılımı kapatma. Kayıp/buluntuya süre uygulanmaz.
+
 ## Uygulama ekranları
 
 - Açılış ve oturum durumuna göre yönlendirme.
@@ -106,6 +112,8 @@ ve [hafta 3 doğrulama belgesinde](docs/hafta-03-api-baglantisi.md) bulunur.
 Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 
 ## Teknik belgeler
+
+- [Sosyal ilan süre kuralı](docs/hafta-05-sure-kurali.md)
 
 - [Dördüncü hafta — Berna: API sorguları ve ekran entegrasyonu](docs/hafta-04-berna-sorgular.md)
 

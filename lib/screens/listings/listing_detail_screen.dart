@@ -8,6 +8,8 @@ import '../../routes/app_routes.dart';
 import '../../security/listing_access.dart';
 import '../../security/listing_mutation_policy.dart';
 import '../../security/role_session_policy.dart';
+import '../../security/listing_expiry_policy.dart';
+import '../../widgets/listing_expiry_boundary.dart';
 import '../../services/api_exception.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/status_badge.dart';
@@ -117,10 +119,16 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListingExpiryBoundary(
+    items: [if (_ilan != null) _ilan!],
+    builder: (context, now) => _buildAt(context, now),
+  );
+
+  Widget _buildAt(BuildContext context, DateTime now) {
     final provider = context.watch<ListingsProvider>();
     final auth = context.watch<AuthProvider>();
     final ilan = _ilan;
+    final expired = ilan != null && const ListingExpiryPolicy().isExpired(ilan, now);
     final canManage =
         ilan != null &&
         listingAccess(
@@ -385,7 +393,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   ],
 
                   // Katılım Butonu (Sosyal İlanlar İçin)
-                  if (ilan.tur == IlanTuru.sosyal) ...[
+                  if (expired)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text('Bu buluşmanın süresi doldu. Katılım kapalı.'),
+                    ),
+                  if (ilan.tur == IlanTuru.sosyal && !expired) ...[
                     AppButton(
                       label: isAttending
                           ? 'Katıldın ($attendanceCount)'
@@ -397,6 +410,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                       onPressed: auth.currentUser == null
                           ? null
                           : () {
+                              if (const ListingExpiryPolicy().isExpired(ilan, DateTime.now())) {
+                                setState(() {});
+                                return;
+                              }
                               provider.toggleAttendance(
                                 ilan.id,
                                 auth.currentUser!.id,

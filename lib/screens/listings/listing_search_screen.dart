@@ -10,6 +10,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/listing_card.dart';
 import '../../widgets/listing_search_bar.dart';
 import '../../widgets/server_listing_results.dart';
+import '../../widgets/expiry_aware_listing_results.dart';
 import '../../services/listings_service.dart';
 import '../../widgets/pagination_controls.dart';
 import '../../widgets/role_session_guard.dart';
@@ -102,7 +103,7 @@ class _ListingSearchScreenState extends State<ListingSearchScreen> {
               ? _selectedCategoryId
               : null;
 
-          return ServerListingResults(
+          return ExpiryAwareListingResults(
             provider: listingsProvider,
             query: ListingQuery(
               tur: _selectedTur,
