@@ -120,6 +120,44 @@ void main() {
     },
   );
 
+  test(
+    'Katılım aynı kimlikle ve güncel Bearer belirteciyle değiştirilir',
+    () async {
+      adapter.body = {
+        ...listingJson(),
+        'katilimciSayisi': 3,
+        'katiliyor': true,
+      };
+      final joined = await service.setParticipation(listingId, attending: true);
+      expect(joined.katilimciSayisi, 3);
+      expect(joined.katiliyor, isTrue);
+      expect(adapter.requests.last.method, 'PUT');
+      expect(adapter.requests.last.path, '/api/ilanlar/$listingId/katilim');
+      expect(adapter.requests.last.data, isNull);
+      token = 'new-token';
+      adapter.body = {
+        ...listingJson(),
+        'katilimciSayisi': 2,
+        'katiliyor': false,
+      };
+      final left = await service.setParticipation(listingId, attending: false);
+      expect(left.katilimciSayisi, 2);
+      expect(left.katiliyor, isFalse);
+      expect(adapter.requests.last.method, 'DELETE');
+      expect(
+        adapter.requests.last.headers['Authorization'],
+        'Bearer new-token',
+      );
+      adapter.status = 409;
+      await expectLater(
+        service.setParticipation(listingId, attending: true),
+        throwsA(
+          isA<ListingApiException>().having((e) => e.statusCode, 'status', 409),
+        ),
+      );
+    },
+  );
+
   test('ASP.NET ValidationProblemDetails alan hataları korunur', () async {
     adapter.status = 400;
     adapter.body = {

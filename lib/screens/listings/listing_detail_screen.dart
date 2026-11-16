@@ -114,6 +114,36 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     return false;
   }
 
+  Future<void> _setParticipation(Ilan ilan) async {
+    final provider = context.read<ListingsProvider>();
+    if (provider.isSaving ||
+        const ListingExpiryPolicy().isExpired(ilan, DateTime.now())) {
+      return;
+    }
+    final session = provider.sessionRevision;
+    try {
+      final updated = await provider.setParticipation(
+        ilan.id,
+        attending: !ilan.katiliyor,
+      );
+      if (mounted && session == provider.sessionRevision) {
+        setState(() => _ilan = updated);
+      }
+    } catch (error) {
+      if (mounted && session == provider.sessionRevision) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error is ApiException
+                  ? error.message
+                  : 'Katılım güncellenemedi. Tekrar deneyin.',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   void _skeleton(String action) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text('“$action” işlemi yakında kullanıma sunulacaktır.')),
   );
@@ -128,28 +158,19 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     final provider = context.watch<ListingsProvider>();
     final auth = context.watch<AuthProvider>();
     final ilan = _ilan;
-    final expired = ilan != null && const ListingExpiryPolicy().isExpired(ilan, now);
+    final expired =
+        ilan != null && const ListingExpiryPolicy().isExpired(ilan, now);
     final canManage =
         ilan != null &&
-        listingAccess(
-          auth,
-          ListingMutation.update,
-          listing: ilan,
-        ) ==
-        RoleAccess.allowed;
+        listingAccess(auth, ListingMutation.update, listing: ilan) ==
+            RoleAccess.allowed;
 
     final kategori = ilan != null
         ? provider.kategoriler.where((k) => k.id == ilan.kategoriId)
         : null;
-    final kategoriAdi =
-        kategori != null && kategori.isNotEmpty ? kategori.first.ad : null;
-
-    final isAttending =
-        ilan != null &&
-        auth.currentUser != null &&
-        provider.isUserAttending(ilan.id, auth.currentUser!.id);
-    final attendanceCount =
-        ilan != null ? provider.getAttendanceCount(ilan.id) : 0;
+    final kategoriAdi = kategori != null && kategori.isNotEmpty
+        ? kategori.first.ad
+        : null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('İlan Detayı')),
@@ -396,29 +417,24 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   if (expired)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Text('Bu buluşmanın süresi doldu. Katılım kapalı.'),
+                      child: Text(
+                        'Bu buluşmanın süresi doldu. Katılım kapalı.',
+                      ),
                     ),
-                  if (ilan.tur == IlanTuru.sosyal && !expired) ...[
+                  if (ilan.tur == IlanTuru.sosyal &&
+                      ilan.durum == IlanDurumu.aktif &&
+                      !expired) ...[
+                    Text('Katılımcı sayısı: ${ilan.katilimciSayisi}'),
+                    const SizedBox(height: 8),
                     AppButton(
-                      label: isAttending
-                          ? 'Katıldın ($attendanceCount)'
-                          : 'Buluşmaya Katıl ($attendanceCount)',
-                      icon: isAttending
-                          ? Icons.check
+                      label: ilan.katiliyor ? 'Katılımı Geri Al' : 'Geliyorum',
+                      icon: ilan.katiliyor
+                          ? Icons.undo
                           : Icons.group_add_outlined,
-                      isOutlined: isAttending,
-                      onPressed: auth.currentUser == null
+                      isOutlined: ilan.katiliyor,
+                      onPressed: auth.currentUser == null || provider.isSaving
                           ? null
-                          : () {
-                              if (const ListingExpiryPolicy().isExpired(ilan, DateTime.now())) {
-                                setState(() {});
-                                return;
-                              }
-                              provider.toggleAttendance(
-                                ilan.id,
-                                auth.currentUser!.id,
-                              );
-                            },
+                          : () => _setParticipation(ilan),
                     ),
                     const SizedBox(height: 10),
                   ],

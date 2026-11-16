@@ -150,11 +150,8 @@ class _MyListingsContentState extends State<_MyListingsContent> {
                 ListingCard(
                   key: ValueKey(item.id),
                   ilan: item,
-                  isAttending: provider.isUserAttending(
-                    item.id,
-                    auth.currentUser!.id,
-                  ),
-                  attendanceCount: provider.getAttendanceCount(item.id),
+                  isAttending: item.katiliyor,
+                  attendanceCount: item.katilimciSayisi,
                   onTap: () => Navigator.pushNamed(
                     context,
                     AppRoutes.listingDetail,

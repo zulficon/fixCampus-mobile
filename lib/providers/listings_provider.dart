@@ -10,7 +10,6 @@ class ListingsProvider extends ChangeNotifier {
   final ListingsService? _service;
   List<Kategori> _kategoriler = [];
   List<Ilan> _ilanlar = [];
-  final List<Katilim> _katilimlar = [];
   bool _isLoading = false;
   bool _isSaving = false;
   bool _disposed = false;
@@ -22,7 +21,6 @@ class ListingsProvider extends ChangeNotifier {
 
   List<Kategori> get kategoriler => List.unmodifiable(_kategoriler);
   List<Ilan> get ilanlar => List.unmodifiable(_ilanlar);
-  List<Katilim> get katilimlar => List.unmodifiable(_katilimlar);
   int get dataRevision => _dataVersion;
   int get sessionRevision => _sessionVersion;
   bool get isLoading => _isLoading;
@@ -38,7 +36,6 @@ class ListingsProvider extends ChangeNotifier {
     ++_loadVersion;
     _ilanlar = [];
     _kategoriler = [];
-    _katilimlar.clear();
     _error = null;
     _isSaving = false;
     _isLoading = userId != null;
@@ -136,7 +133,6 @@ class ListingsProvider extends ChangeNotifier {
   Future<void> deleteListing(String id) =>
       _save<void>(() => _requireService().deleteListing(id), (_) {
         _ilanlar.removeWhere((i) => i.id == id);
-        _katilimlar.removeWhere((k) => k.ilanId == id);
       });
 
   Future<T> _save<T>(
@@ -198,31 +194,10 @@ class ListingsProvider extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  // Katılım servisi 5. hafta görevidir; mevcut ekran iskeletinin yerel durumu.
-  bool isUserAttending(String ilanId, String userId) =>
-      _katilimlar.any((k) => k.ilanId == ilanId && k.profilId == userId);
-
-  int getAttendanceCount(String ilanId) =>
-      _katilimlar.where((k) => k.ilanId == ilanId).length;
-
-  void toggleAttendance(String ilanId, String userId) {
-    final index = _katilimlar.indexWhere(
-      (k) => k.ilanId == ilanId && k.profilId == userId,
-    );
-    if (index >= 0) {
-      _katilimlar.removeAt(index);
-    } else {
-      _katilimlar.add(
-        Katilim(
-          id: 'katilim-${DateTime.now().microsecondsSinceEpoch}',
-          ilanId: ilanId,
-          profilId: userId,
-          katilimTarihi: DateTime.now().toUtc(),
-        ),
-      );
-    }
-    _notify();
-  }
+  Future<Ilan> setParticipation(String id, {required bool attending}) => _save(
+    () => _requireService().setParticipation(id, attending: attending),
+    _upsert,
+  );
 
   @override
   void dispose() {

@@ -134,6 +134,18 @@ class FakeListingsService implements ListingsService {
   }
 
   @override
+  Future<Ilan> setParticipation(String id, {required bool attending}) async {
+    check();
+    final index = items.indexWhere((item) => item.id == id);
+    final item = items[index];
+    if (item.katiliyor == attending) return item;
+    return items[index] = item.copyWith(
+      katiliyor: attending,
+      katilimciSayisi: item.katilimciSayisi + (attending ? 1 : -1),
+    );
+  }
+
+  @override
   Future<void> deleteListing(String id) async {
     check();
     deletes++;

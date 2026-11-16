@@ -45,6 +45,7 @@ abstract class ListingsService {
   Future<Ilan> createListing(SaveListingRequest request);
   Future<Ilan> updateListing(String id, SaveListingRequest request);
   Future<void> deleteListing(String id);
+  Future<Ilan> setParticipation(String id, {required bool attending});
 }
 
 class ListingApiException extends ApiException {
@@ -112,6 +113,17 @@ class ApiListingsService implements ListingsService {
   Future<void> deleteListing(String id) =>
       _request<void>(() => api.dio.delete<Object>(_path(id)), (_) {}, 204);
 
+  @override
+  Future<Ilan> setParticipation(String id, {required bool attending}) {
+    final path = '${_path(id)}/katilim';
+    return _request(
+      () =>
+          attending ? api.dio.put<Object>(path) : api.dio.delete<Object>(path),
+      (data) => Ilan.fromJson(_object(data)),
+      200,
+    );
+  }
+
   String _path(String id) =>
       '${ApiEndpoints.listings}/${Uri.encodeComponent(id)}';
 
@@ -174,6 +186,7 @@ class ApiListingsService implements ListingsService {
         403 =>
           'Bu işlem için yetkiniz yok. İlanı yalnızca sahibi değiştirebilir.',
         404 => 'İlan bulunamadı veya artık erişilemiyor.',
+        409 => 'Bu ilan katılıma açık değil.',
         _ => 'İlan servisi şu anda kullanılamıyor. Tekrar deneyin.',
       };
       throw ListingApiException(

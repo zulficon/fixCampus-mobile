@@ -136,12 +136,27 @@ void main() {
     expect(provider.ilanlar, isEmpty);
   });
 
-  test('Mevcut katılım iskeletinin durumu korunur', () async {
+  test('Katılım sunucu yanıtıyla güncellenir ve hata durumu korur', () async {
     await provider.load();
-    provider.toggleAttendance(listingId, ownerId);
-    expect(provider.getAttendanceCount(listingId), 1);
-    expect(provider.isUserAttending(listingId, ownerId), isTrue);
-    provider.toggleAttendance(listingId, ownerId);
-    expect(provider.getAttendanceCount(listingId), 0);
+    await provider.setParticipation(listingId, attending: true);
+    await provider.setParticipation(listingId, attending: true);
+    expect(provider.ilanlar.single.katiliyor, isTrue);
+    expect(provider.ilanlar.single.katilimciSayisi, 1);
+
+    service.error = const ListingApiException(
+      ApiFailure.connection,
+      'Bağlantı yok',
+    );
+    await expectLater(
+      provider.setParticipation(listingId, attending: false),
+      throwsA(isA<ListingApiException>()),
+    );
+    expect(provider.ilanlar.single.katiliyor, isTrue);
+    expect(provider.isSaving, isFalse);
+
+    service.error = null;
+    await provider.setParticipation(listingId, attending: false);
+    expect(provider.ilanlar.single.katiliyor, isFalse);
+    expect(provider.ilanlar.single.katilimciSayisi, 0);
   });
 }

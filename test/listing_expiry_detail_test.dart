@@ -50,11 +50,19 @@ void main() {
           find.text('Bu buluşmanın süresi doldu. Katılım kapalı.'),
           expired ? findsOneWidget : findsNothing,
         );
-        expect(
-          find.textContaining('Buluşmaya Katıl'),
-          expired ? findsNothing : findsOneWidget,
-        );
+        expect(find.text('Geliyorum'), expired ? findsNothing : findsOneWidget);
         expect(find.text('İlanı Düzenle'), findsOneWidget);
+        if (!expired) {
+          await tester.ensureVisible(find.text('Geliyorum'));
+          await tester.tap(find.text('Geliyorum'));
+          await tester.pumpAndSettle();
+          expect(find.text('Katılımı Geri Al'), findsOneWidget);
+          expect(find.text('Katılımcı sayısı: 1'), findsOneWidget);
+          await tester.tap(find.text('Katılımı Geri Al'));
+          await tester.pumpAndSettle();
+          expect(find.text('Geliyorum'), findsOneWidget);
+          expect(find.text('Katılımcı sayısı: 0'), findsOneWidget);
+        }
       },
     );
   }

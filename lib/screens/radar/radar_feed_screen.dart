@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/listings_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/listing_search_filter.dart';
@@ -53,8 +52,6 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
   @override
   Widget build(BuildContext context) {
     final listingsProvider = context.watch<ListingsProvider>();
-    final auth = context.watch<AuthProvider>();
-    final currentUserId = auth.currentUser?.id ?? '';
 
     final categories = listingsProvider.kategoriler
         .where((k) => k.tur == IlanTuru.sosyal)
@@ -241,18 +238,11 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final item = pagination.items[index];
-                        final isAttending = listingsProvider.isUserAttending(
-                          item.id,
-                          currentUserId,
-                        );
-                        final count = listingsProvider.getAttendanceCount(
-                          item.id,
-                        );
 
                         return ListingCard(
                           ilan: item,
-                          isAttending: isAttending,
-                          attendanceCount: count,
+                          isAttending: item.katiliyor,
+                          attendanceCount: item.katilimciSayisi,
                           onTap: () {
                             Navigator.pushNamed(
                               context,

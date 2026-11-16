@@ -335,16 +335,11 @@ class ProfileScreen extends StatelessWidget {
               )
             else
               ...userListings.map((item) {
-                final isAttending = listingsProvider.isUserAttending(
-                  item.id,
-                  user?.id ?? '',
-                );
-                final count = listingsProvider.getAttendanceCount(item.id);
 
                 return ListingCard(
                   ilan: item,
-                  isAttending: isAttending,
-                  attendanceCount: count,
+                  isAttending: item.katiliyor,
+                  attendanceCount: item.katilimciSayisi,
                   onTap: () {
                     Navigator.pushNamed(
                       context,

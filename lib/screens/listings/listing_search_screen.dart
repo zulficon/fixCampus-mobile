@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/listings_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/listing_search_filter.dart';
@@ -89,8 +88,6 @@ class _ListingSearchScreenState extends State<ListingSearchScreen> {
       child: Builder(
         builder: (context) {
           final listingsProvider = context.watch<ListingsProvider>();
-          final auth = context.watch<AuthProvider>();
-          final currentUserId = auth.currentUser?.id ?? '';
 
           final availableCategories = _selectedTur == null
               ? listingsProvider.kategoriler
@@ -307,21 +304,10 @@ class _ListingSearchScreenState extends State<ListingSearchScreen> {
                               index,
                             ) {
                               final item = pagination.items[index];
-                              final isSocial = item.tur == IlanTuru.sosyal;
                               return ListingCard(
                                 ilan: item,
-                                attendanceCount: isSocial
-                                    ? listingsProvider.getAttendanceCount(
-                                        item.id,
-                                      )
-                                    : 0,
-                                isAttending:
-                                    isSocial &&
-                                    currentUserId.isNotEmpty &&
-                                    listingsProvider.isUserAttending(
-                                      item.id,
-                                      currentUserId,
-                                    ),
+                                attendanceCount: item.katilimciSayisi,
+                                isAttending: item.katiliyor,
                                 onTap: () {
                                   Navigator.pushNamed(
                                     context,

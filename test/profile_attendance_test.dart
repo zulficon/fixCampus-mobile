@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:fixcampus_mobile/providers/auth_provider.dart';
+import 'package:fixcampus_mobile/models/models.dart';
 import 'auth_provider_test.dart' show FakeAuthService;
 import 'support/listings_fakes.dart';
 import 'package:fixcampus_mobile/providers/listings_provider.dart';
@@ -23,7 +24,15 @@ void main() {
         service: FakeAuthService()..hasSession = true,
       );
       await authProvider.initialize();
-      final listingsProvider = ListingsProvider(service: FakeListingsService());
+      final service = FakeListingsService()
+        ..items = [
+          Ilan.fromJson({
+            ...listingJson(),
+            'katilimciSayisi': 2,
+            'katiliyor': true,
+          }),
+        ];
+      final listingsProvider = ListingsProvider(service: service);
       await listingsProvider.load();
 
       await tester.pumpWidget(
@@ -44,20 +53,9 @@ void main() {
 
       // İlk kartı incele
       final ListingCard firstCard = tester.widget(listingCardFinder.first);
-      final expectedCount = listingsProvider.getAttendanceCount(
-        firstCard.ilan.id,
-      );
-      final expectedAttending = listingsProvider.isUserAttending(
-        firstCard.ilan.id,
-        authProvider.currentUser?.id ?? '',
-      );
-
-      // Kartın parametreleri sıfır değil, provider'daki gerçek değerler olmalı
-      expect(firstCard.attendanceCount, expectedCount);
-      expect(firstCard.isAttending, expectedAttending);
-
-      // Kart üzerinde katılımcı sayısı yazısının doğru render edildiğini doğrula
-      expect(find.text('$expectedCount katılımcı'), findsWidgets);
+      expect(firstCard.attendanceCount, 2);
+      expect(firstCard.isAttending, isTrue);
+      expect(find.text('2 katılımcı'), findsWidgets);
     },
   );
 }
