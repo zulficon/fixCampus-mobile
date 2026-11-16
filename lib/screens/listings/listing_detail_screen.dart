@@ -11,6 +11,7 @@ import '../../security/role_session_policy.dart';
 import '../../security/listing_expiry_policy.dart';
 import '../../widgets/listing_expiry_boundary.dart';
 import '../../services/api_exception.dart';
+import '../../services/listings_service.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/status_badge.dart';
 
@@ -142,6 +143,71 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         );
       }
     }
+  }
+
+  void _showParticipants(Ilan ilan) {
+    final provider = context.read<ListingsProvider>();
+    final session = provider.sessionRevision;
+    Future<List<ListingParticipant>>? participants;
+
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Katılımcılar'),
+        content: SizedBox(
+          width: 360,
+          child: FutureBuilder<List<ListingParticipant>>(
+            future: participants ??= provider.getParticipants(ilan.id),
+            builder: (context, snapshot) {
+              if (context.watch<ListingsProvider>().sessionRevision != session) {
+                return const Text('Oturum değişti. Listeyi yeniden açın.');
+              }
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(
+                  heightFactor: 2,
+                  child: CircularProgressIndicator(),
+                );
+              }
+              if (snapshot.hasError) {
+                final error = snapshot.error;
+                return Text(
+                  error is ApiException
+                      ? error.message
+                      : 'Katılımcılar yüklenemedi. Listeyi yeniden açın.',
+                );
+              }
+              final items = snapshot.data!;
+              if (items.isEmpty) return const Text('Henüz katılımcı yok.');
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 360),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final participant = items[index];
+                    final details = [participant.bolum, participant.sinif]
+                        .whereType<String>()
+                        .where((value) => value.trim().isNotEmpty)
+                        .join(' · ');
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(participant.adSoyad),
+                      subtitle: details.isEmpty ? null : Text(details),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Kapat'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _skeleton(String action) => ScaffoldMessenger.of(context).showSnackBar(
@@ -413,6 +479,13 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                     const SizedBox(height: 16),
                   ],
 
+                  if (ilan.tur == IlanTuru.sosyal && canManage)
+                    TextButton.icon(
+                      onPressed: () => _showParticipants(ilan),
+                      icon: const Icon(Icons.people_outline),
+                      label: Text('Katılımcı sayısı: ${ilan.katilimciSayisi}'),
+                    ),
+
                   // Katılım Butonu (Sosyal İlanlar İçin)
                   if (expired)
                     const Padding(
@@ -424,7 +497,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   if (ilan.tur == IlanTuru.sosyal &&
                       ilan.durum == IlanDurumu.aktif &&
                       !expired) ...[
-                    Text('Katılımcı sayısı: ${ilan.katilimciSayisi}'),
+                    if (!canManage)
+                      Text('Katılımcı sayısı: ${ilan.katilimciSayisi}'),
                     const SizedBox(height: 8),
                     AppButton(
                       label: ilan.katiliyor ? 'Katılımı Geri Al' : 'Geliyorum',

@@ -158,6 +158,22 @@ void main() {
     },
   );
 
+  test('Katılımcılar Bearer ile alınır ve boş profil alanları korunur', () async {
+    adapter.body = [
+      {'adSoyad': 'Örnek Öğrenci', 'bolum': 'Tıp', 'sinif': null},
+    ];
+    final result = await service.getParticipants(listingId);
+    expect(result.single, (adSoyad: 'Örnek Öğrenci', bolum: 'Tıp', sinif: null));
+    expect(adapter.requests.last.method, 'GET');
+    expect(adapter.requests.last.path, '/api/ilanlar/$listingId/katilimcilar');
+    expect(adapter.requests.last.headers['Authorization'], 'Bearer first-token');
+    adapter.status = 403;
+    await expectLater(
+      service.getParticipants(listingId),
+      throwsA(isA<ListingApiException>().having((e) => e.statusCode, 'status', 403)),
+    );
+  });
+
   test('ASP.NET ValidationProblemDetails alan hataları korunur', () async {
     adapter.status = 400;
     adapter.body = {

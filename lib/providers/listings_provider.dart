@@ -194,6 +194,13 @@ class ListingsProvider extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  Future<List<ListingParticipant>> getParticipants(String id) async {
+    final session = _sessionVersion;
+    final result = await _requireService().getParticipants(id);
+    _checkSession(session);
+    return result;
+  }
+
   Future<Ilan> setParticipation(String id, {required bool attending}) => _save(
     () => _requireService().setParticipation(id, attending: attending),
     _upsert,

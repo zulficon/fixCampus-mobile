@@ -36,7 +36,10 @@ class SaveListingRequest {
   };
 }
 
+typedef ListingParticipant = ({String adSoyad, String? bolum, String? sinif});
+
 abstract class ListingsService {
+  Future<List<ListingParticipant>> getParticipants(String id);
   Future<List<Kategori>> getCategories();
   Future<List<Ilan>> getListings();
 
@@ -123,6 +126,27 @@ class ApiListingsService implements ListingsService {
       200,
     );
   }
+
+  @override
+  Future<List<ListingParticipant>> getParticipants(String id) => _request(
+    () => api.dio.get<Object>('${_path(id)}/katilimcilar'),
+    (data) => _list(data, (json) {
+      final name = json['adSoyad'];
+      final department = json['bolum'];
+      final year = json['sinif'];
+      if (name is! String ||
+          (department != null && department is! String) ||
+          (year != null && year is! String)) {
+        throw const FormatException('Geçersiz katılımcı bilgisi.');
+      }
+      return (
+        adSoyad: name,
+        bolum: department as String?,
+        sinif: year as String?,
+      );
+    }),
+    200,
+  );
 
   String _path(String id) =>
       '${ApiEndpoints.listings}/${Uri.encodeComponent(id)}';

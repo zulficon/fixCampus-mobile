@@ -134,6 +134,12 @@ class FakeListingsService implements ListingsService {
   }
 
   @override
+  Future<List<ListingParticipant>> getParticipants(String id) async {
+    check();
+    return const [];
+  }
+
+  @override
   Future<Ilan> setParticipation(String id, {required bool attending}) async {
     check();
     final index = items.indexWhere((item) => item.id == id);
