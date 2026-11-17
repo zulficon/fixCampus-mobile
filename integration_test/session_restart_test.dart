@@ -12,7 +12,10 @@ void main() {
     'Android: süreç yeniden açılınca gerçek kayıtlı oturum geri geliyor',
     (tester) async {
       await app.main();
-      await waitFor(tester, find.byType(NavigationBar));
+      await waitFor(
+        tester,
+        find.byKey(const ValueKey('main-bottom-nav')),
+      );
       expect(Supabase.instance.client.auth.currentUser!.email, testEmailA);
       await openProfile(tester);
       expect(find.text(updatedName), findsOneWidget);

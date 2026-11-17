@@ -194,6 +194,9 @@ void main() {
   });
 
   testWidgets('Üst menü gerçek İlanlarım rotasını açar', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await listings.load();
@@ -211,7 +214,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('İlanlarım'));
+    await tester.tap(find.byTooltip('Bildirimler ve menü'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('İlanlarım'));
     await tester.pumpAndSettle();
     expect(find.byType(MyListingsScreen), findsOneWidget);
     expect(find.text('1 ilan'), findsOneWidget);

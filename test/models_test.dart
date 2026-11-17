@@ -65,6 +65,32 @@ void main() {
       expect(fromJson.tur, IlanTuru.sosyal);
       expect(fromJson.durum, IlanDurumu.aktif);
       expect(fromJson.bulusmaTarihi, now);
+
+      final apiMap = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=Merkez%20K%C3%BCt%C3%BCphane',
+      );
+      final withApiMap = Ilan.fromJson({
+        ...json,
+        'haritaUrl': apiMap.toString(),
+      });
+      expect(withApiMap.haritaBaglantisi, apiMap);
+      expect(withApiMap.toJson()['haritaUrl'], apiMap.toString());
+      expect(fromJson.haritaBaglantisi?.queryParameters['query'], ilan.yer);
+      expect(
+        Ilan.fromJson({
+          ...json,
+          'haritaUrl': 'https://example.org/',
+        }).haritaBaglantisi?.host,
+        'www.google.com',
+      );
+      expect(
+        withApiMap
+            .copyWith(yer: 'Kantin')
+            .haritaBaglantisi
+            ?.queryParameters['query'],
+        'Kantin',
+      );
+      expect(withApiMap.copyWith(yer: ' ').haritaBaglantisi, isNull);
     });
 
     test('Katilim modeli JSON serileştirme', () {

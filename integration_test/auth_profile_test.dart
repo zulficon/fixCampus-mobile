@@ -86,7 +86,10 @@ void main() {
       await waitFor(tester, find.text('E-posta veya parola hatalı.'));
       expect(client.auth.currentSession == null, isTrue);
       await fillLogin(tester, testEmailA, testPassword);
-      await waitFor(tester, find.byType(NavigationBar));
+      await waitFor(
+        tester,
+        find.byKey(const ValueKey('main-bottom-nav')),
+      );
       await openProfile(tester);
       expect(find.text(updatedName), findsOneWidget);
       expect(client.auth.currentUser!.id, firstUser);
@@ -101,7 +104,10 @@ void main() {
       await tester.tap(find.text('Çıkış yap'));
       await waitFor(tester, find.byType(LoginScreen));
       await fillLogin(tester, testEmailA, testPassword);
-      await waitFor(tester, find.byType(NavigationBar));
+      await waitFor(
+        tester,
+        find.byKey(const ValueKey('main-bottom-nav')),
+      );
       await openProfile(tester);
       expect(find.text(updatedName), findsOneWidget);
       http.close();

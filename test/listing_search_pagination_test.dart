@@ -304,6 +304,9 @@ void main() {
     });
 
     Future<void> mountScreen(WidgetTester tester, Widget child) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -338,33 +341,61 @@ void main() {
         expect(service.queries.last.page, 1);
         expect(service.queries.last.pageSize, 2);
         expect(service.queries.last.activeSocialOnly, isTrue);
+        final scrollable = find.byType(Scrollable).first;
+        await tester.scrollUntilVisible(
+          find.text('Algoritma Çalışma Grubu'),
+          180,
+          scrollable: scrollable,
+        );
         expect(find.text('Algoritma Çalışma Grubu'), findsOneWidget);
         expect(find.text('Sabah Koşusu'), findsNothing);
-        expect(find.text('Sayfa 1 / 2'), findsOneWidget);
 
         // Sonraki sayfaya geç
-        await tester.ensureVisible(find.text('Sonraki'));
+        await tester.scrollUntilVisible(
+          find.text('Sonraki'),
+          140,
+          scrollable: scrollable,
+        );
+        expect(find.text('Sayfa 1 / 2'), findsOneWidget);
         await tester.tap(find.text('Sonraki'));
         await tester.pumpAndSettle();
 
+        await tester.ensureVisible(find.text('Sayfa 2 / 2'));
         expect(find.text('Sabah Koşusu'), findsOneWidget);
         expect(find.text('Basketbol Turnuvası'), findsNothing);
         expect(find.text('Sayfa 2 / 2'), findsOneWidget);
         expect(service.queries.last.page, 2);
 
-        // Arama yapılınca sayfa 1'e döner ve eşleşen kayıt gösterilir
+        // Arama menüden açılır ve yeni sorgu sayfa 1'e döner.
+        final radarMenu = find.byTooltip('Bildirimler ve menü');
+        await tester.ensureVisible(radarMenu);
+        await tester.tap(radarMenu);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Radar’da ara'));
+        await tester.pumpAndSettle();
         await tester.enterText(find.byType(TextField), 'Algoritma');
         await tester.pumpAndSettle();
 
+        await tester.scrollUntilVisible(
+          find.text('Algoritma Çalışma Grubu'),
+          160,
+          scrollable: scrollable,
+        );
         expect(find.text('Algoritma Çalışma Grubu'), findsOneWidget);
         expect(find.text('1 ilan bulundu'), findsOneWidget);
         expect(service.queries.last.text, 'Algoritma');
         expect(service.queries.last.page, 1);
 
         // Filtreleri temizle
+        await tester.ensureVisible(find.text('Filtreleri Temizle'));
         await tester.tap(find.text('Filtreleri Temizle'));
         await tester.pumpAndSettle();
 
+        await tester.scrollUntilVisible(
+          find.text('Basketbol Turnuvası'),
+          160,
+          scrollable: scrollable,
+        );
         expect(find.text('Basketbol Turnuvası'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },

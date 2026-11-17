@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+import 'app_text_field.dart';
+
 /// İlan akışları ve arama ekranı için minimalist arama çubuğu ve aktif filtre özeti.
 class ListingSearchBar extends StatelessWidget {
   const ListingSearchBar({
@@ -30,56 +33,22 @@ class ListingSearchBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
+          AppTextField(
             controller: controller,
             onChanged: onChanged,
-            textInputAction: TextInputAction.search,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF18181B)),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF71717A),
-              ),
-              prefixIcon: const Icon(
-                Icons.search,
-                size: 18,
-                color: Color(0xFF71717A),
-              ),
-              suffixIcon: hasText
-                  ? IconButton(
-                      tooltip: 'Aramayı temizle',
-                      icon: const Icon(
-                        Icons.close,
-                        size: 18,
-                        color: Color(0xFF71717A),
-                      ),
-                      onPressed: onClear,
-                    )
-                  : null,
-              isDense: true,
-              filled: true,
-              fillColor: const Color(0xFFF8FAFC),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(
-                  color: Color(0xFF18181B),
-                  width: 1.2,
-                ),
-              ),
-            ),
+            hint: hintText,
+            search: true,
+            trailing: hasText
+                ? IconButton(
+                    tooltip: 'Aramayı temizle',
+                    icon: const Icon(
+                      Icons.close,
+                      size: 20,
+                      color: AppTheme.muted,
+                    ),
+                    onPressed: onClear,
+                  )
+                : null,
           ),
           if (hasActiveFilters && totalResults != null) ...[
             const SizedBox(height: 6),
@@ -89,11 +58,7 @@ class ListingSearchBar extends StatelessWidget {
                 Flexible(
                   child: Text(
                     '$totalResults ilan bulundu',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF52525B),
-                    ),
+                    style: AppTheme.meta.copyWith(fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -122,4 +87,3 @@ class ListingSearchBar extends StatelessWidget {
     );
   }
 }
-

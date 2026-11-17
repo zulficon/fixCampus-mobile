@@ -265,6 +265,9 @@ void main() {
   testWidgets('Rol kontrolü bitince kullanıcının Profil sekmesi korunur', (
     tester,
   ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     service.hasSession = true;
     await auth.initialize();
     await mountRoute(tester, AppRoutes.main);
@@ -293,3 +296,4 @@ void main() {
     expect(find.text('Profil doğrulanamadı'), findsNothing);
   });
 }
+

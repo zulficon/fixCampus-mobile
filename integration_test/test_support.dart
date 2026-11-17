@@ -18,7 +18,7 @@ Future<void> waitFor(
     await tester.pump(const Duration(milliseconds: 250));
   }
   expect(finder, findsWidgets);
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 400));
 }
 
 Future<void> fillLogin(
@@ -43,10 +43,16 @@ Future<void> register(WidgetTester tester, String name, String email) async {
   await tester.pumpAndSettle();
   await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Kayıt Ol'));
   await tester.tap(find.widgetWithText(ElevatedButton, 'Kayıt Ol'));
-  await waitFor(tester, find.byType(NavigationBar));
+  await waitFor(
+    tester,
+    find.byKey(const ValueKey('main-bottom-nav')),
+  );
 }
 
 Future<void> openProfile(WidgetTester tester) async {
-  await tester.tap(find.byType(NavigationDestination).at(3));
+  await tester.tap(find.descendant(
+    of: find.byKey(const ValueKey('main-bottom-nav')),
+    matching: find.text('Profil'),
+  ));
   await tester.pumpAndSettle();
 }

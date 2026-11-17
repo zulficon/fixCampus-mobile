@@ -1,41 +1,56 @@
 import 'package:flutter/material.dart';
 
-/// Minimalist Kategori Filtre Çipi
+import '../theme/app_theme.dart';
+
 class CategoryChip extends StatelessWidget {
   const CategoryChip({
     super.key,
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.compact = false,
   });
 
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final height = compact ? 36.0 : 40.0;
+    final color = isSelected ? AppTheme.ink : AppTheme.surface;
+    final shape = StadiumBorder(
+      side: BorderSide(
+        color: isSelected ? AppTheme.ink : AppTheme.line,
+        width: 1.5,
+      ),
+    );
+
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.black : Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected ? Colors.black : const Color(0xFFE4E4E7),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : const Color(0xFF27272A),
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              fontSize: 12,
+      padding: const EdgeInsetsDirectional.only(end: 8),
+      child: Semantics(
+        selected: isSelected,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const StadiumBorder(),
+          child: Center(
+            child: Ink(
+              height: height,
+              decoration: ShapeDecoration(color: color, shape: shape),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16),
+                child: Center(
+                  widthFactor: 1,
+                  child: Text(
+                    label,
+                    style: AppTheme.meta.copyWith(
+                      fontSize: compact ? 13 : 14,
+                      color: isSelected ? AppTheme.surface : AppTheme.ink,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

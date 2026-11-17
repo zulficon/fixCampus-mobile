@@ -14,6 +14,7 @@ class Ilan {
     required this.bulusmaTarihi,
     required this.durum,
     required this.olusturulmaTarihi,
+    this.haritaUrl,
     this.katilimciSayisi = 0,
     this.katiliyor = false,
   });
@@ -25,11 +26,39 @@ class Ilan {
   final String aciklama;
   final IlanTuru tur;
   final String yer;
+  final String? haritaUrl;
   final DateTime? bulusmaTarihi;
   final IlanDurumu durum;
   final DateTime olusturulmaTarihi;
   final int katilimciSayisi;
   final bool katiliyor;
+
+  Uri? get haritaBaglantisi {
+    final place = yer.trim();
+    if (place.isEmpty) return null;
+
+    final provided = Uri.tryParse(haritaUrl ?? '');
+    final params = provided?.queryParametersAll;
+    if (provided != null &&
+        provided.scheme == 'https' &&
+        provided.host == 'www.google.com' &&
+        !provided.hasPort &&
+        provided.userInfo.isEmpty &&
+        !provided.hasFragment &&
+        provided.path == '/maps/search/' &&
+        params?.length == 2 &&
+        params?['api']?.length == 1 &&
+        params?['api']?.first == '1' &&
+        params?['query']?.length == 1 &&
+        params?['query']?.first == place) {
+      return provided;
+    }
+
+    return Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': place,
+    });
+  }
 
   factory Ilan.fromJson(Map<String, dynamic> json) {
     final count = json['katilimciSayisi'] ?? 0;
@@ -45,6 +74,9 @@ class Ilan {
       aciklama: JsonFields.string(json, 'aciklama'),
       tur: IlanTuru.fromJson(JsonFields.string(json, 'tur')),
       yer: JsonFields.string(json, 'yer'),
+      haritaUrl: json['haritaUrl'] is String
+          ? json['haritaUrl'] as String
+          : null,
       bulusmaTarihi: JsonFields.nullableDateTime(json, 'bulusmaTarihi'),
       durum: IlanDurumu.fromJson(JsonFields.string(json, 'durum')),
       olusturulmaTarihi: JsonFields.dateTime(json, 'olusturulmaTarihi'),
@@ -61,6 +93,7 @@ class Ilan {
     'aciklama': aciklama,
     'tur': tur.apiValue,
     'yer': yer,
+    if (haritaUrl != null) 'haritaUrl': haritaUrl,
     'bulusmaTarihi': bulusmaTarihi?.toUtc().toIso8601String(),
     'durum': durum.apiValue,
     'olusturulmaTarihi': olusturulmaTarihi.toUtc().toIso8601String(),
@@ -90,6 +123,7 @@ class Ilan {
     aciklama: aciklama ?? this.aciklama,
     tur: tur ?? this.tur,
     yer: yer ?? this.yer,
+    haritaUrl: yer == null || yer == this.yer ? haritaUrl : null,
     bulusmaTarihi: clearBulusmaTarihi
         ? null
         : (bulusmaTarihi ?? this.bulusmaTarihi),

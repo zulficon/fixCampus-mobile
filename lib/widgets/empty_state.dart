@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+import 'app_button.dart';
+import 'sticker_slot.dart';
+
 /// Boş Veri Durumu Bileşeni
 class EmptyState extends StatelessWidget {
   const EmptyState({
@@ -9,6 +13,7 @@ class EmptyState extends StatelessWidget {
     required this.description,
     this.actionLabel,
     this.onAction,
+    this.sticker,
   });
 
   final IconData icon;
@@ -16,6 +21,7 @@ class EmptyState extends StatelessWidget {
   final String description;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final StickerSlot? sticker;
 
   @override
   Widget build(BuildContext context) {
@@ -25,43 +31,29 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF1F5F9),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 48,
-                color: const Color(0xFF64748B),
-              ),
-            ),
+            sticker ??
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.primaryTint,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 48, color: AppTheme.primaryDark),
+                ),
             const SizedBox(height: 20),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0F172A),
-              ),
-            ),
+            Text(title, textAlign: TextAlign.center, style: AppTheme.cardTitle),
             const SizedBox(height: 8),
             Text(
               description,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF64748B),
-                height: 1.4,
-              ),
+              style: AppTheme.body.copyWith(color: AppTheme.muted),
             ),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 20),
-              ElevatedButton(
+              AppButton(
                 onPressed: onAction,
-                child: Text(actionLabel!),
+                label: actionLabel!,
+                fullWidth: false,
               ),
             ],
           ],

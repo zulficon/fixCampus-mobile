@@ -235,12 +235,12 @@ class _ListingSearchScreenState extends State<ListingSearchScreen> {
                       // Kategori Filtreleme Çipleri
                       SliverToBoxAdapter(
                         child: SizedBox(
-                          height: 48,
+                          height: 52,
                           child: ListView(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
-                              vertical: 8,
+                              vertical: 4,
                             ),
                             children: [
                               CategoryChip(

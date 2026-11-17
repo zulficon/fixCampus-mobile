@@ -4,6 +4,7 @@ import '../../models/models.dart';
 import '../../providers/listings_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/listing_search_filter.dart';
+import '../../widgets/app_segmented_control.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/listing_card.dart';
@@ -190,52 +191,22 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
                   ),
                 ),
 
-                // Sade Segment Seçici
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 4,
                     ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F4F5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.all(3),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _SimpleSegment(
-                              label: 'Tümü',
-                              isSelected: _filterTur == null,
-                              onTap: () => _selectTur(
-                                null,
-                                listingsProvider.kategoriler,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: _SimpleSegment(
-                              label: 'Kayıp',
-                              isSelected: _filterTur == IlanTuru.kayip,
-                              onTap: () => _selectTur(
-                                IlanTuru.kayip,
-                                listingsProvider.kategoriler,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: _SimpleSegment(
-                              label: 'Bulunan',
-                              isSelected: _filterTur == IlanTuru.buluntu,
-                              onTap: () => _selectTur(
-                                IlanTuru.buluntu,
-                                listingsProvider.kategoriler,
-                              ),
-                            ),
-                          ),
-                        ],
+                    child: AppSegmentedControl(
+                      labels: const ['Tümü', 'Kayıp', 'Bulunan'],
+                      selectedIndex: switch (_filterTur) {
+                        IlanTuru.kayip => 1,
+                        IlanTuru.buluntu => 2,
+                        _ => 0,
+                      },
+                      onSelected: (index) => _selectTur(
+                        const [null, IlanTuru.kayip, IlanTuru.buluntu][index],
+                        listingsProvider.kategoriler,
                       ),
                     ),
                   ),
@@ -244,15 +215,16 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
                 // Kategori Çipleri
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 48,
+                    height: 52,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 4,
                       ),
                       children: [
                         CategoryChip(
+                          compact: true,
                           label: 'Tümü',
                           isSelected: activeCategoryId == null,
                           onTap: () => setState(() {
@@ -262,6 +234,7 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
                         ),
                         ...categories.map(
                           (cat) => CategoryChip(
+                            compact: true,
                             label: cat.ad,
                             isSelected: activeCategoryId == cat.id,
                             onTap: () {
@@ -332,42 +305,6 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-class _SimpleSegment extends StatelessWidget {
-  const _SimpleSegment({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? Colors.black : const Color(0xFF71717A),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

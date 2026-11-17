@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
+import '../theme/app_theme.dart';
 import 'status_badge.dart';
 
-/// Sadeleştirilmiş Minimalist İlan Kartı
 class ListingCard extends StatelessWidget {
   const ListingCard({
     super.key,
@@ -27,7 +27,7 @@ class ListingCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppTheme.cardInset),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -44,12 +44,7 @@ class ListingCard extends StatelessWidget {
               // İlan Başlığı
               Text(
                 ilan.baslik,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF18181B),
-                  height: 1.3,
-                ),
+                style: AppTheme.cardTitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -58,30 +53,30 @@ class ListingCard extends StatelessWidget {
               // Açıklama Özeti
               Text(
                 ilan.aciklama,
-                style: const TextStyle(
+                style: AppTheme.body.copyWith(
+                  color: AppTheme.muted,
                   fontSize: 13,
-                  color: Color(0xFF71717A),
-                  height: 1.4,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
 
-              const Divider(height: 16, color: Color(0xFFF4F4F5)),
+              const Divider(height: 16, color: AppTheme.line),
 
               // Alt Bilgi
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (ilan.tur == IlanTuru.sosyal && ilan.bulusmaTarihi != null) ...[
+                  if (ilan.tur == IlanTuru.sosyal &&
+                      ilan.bulusmaTarihi != null) ...[
                     Expanded(
                       child: Row(
                         children: [
                           const Icon(
                             Icons.schedule_outlined,
                             size: 14,
-                            color: Color(0xFF71717A),
+                            color: AppTheme.muted,
                           ),
                           const SizedBox(width: 4),
                           Flexible(
@@ -90,7 +85,7 @@ class ListingCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF27272A),
+                                color: AppTheme.inkSoft,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -103,7 +98,7 @@ class ListingCard extends StatelessWidget {
                       '$attendanceCount katılımcı',
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF71717A),
+                        color: AppTheme.muted,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -112,7 +107,7 @@ class ListingCard extends StatelessWidget {
                       dateFormat.format(ilan.olusturulmaTarihi.toLocal()),
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFFA1A1AA),
+                        color: AppTheme.muted,
                       ),
                     ),
                     const Row(
@@ -122,14 +117,14 @@ class ListingCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black,
+                            color: AppTheme.ink,
                           ),
                         ),
                         SizedBox(width: 2),
                         Icon(
                           Icons.chevron_right_rounded,
                           size: 16,
-                          color: Colors.black,
+                          color: AppTheme.ink,
                         ),
                       ],
                     ),

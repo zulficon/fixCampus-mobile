@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Sadeleştirilmiş Minimalist Buton Bileşeni
+import '../theme/app_theme.dart';
+
+enum AppButtonVariant { primary, create, lost, found, secondary, joined }
+
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
@@ -12,6 +15,9 @@ class AppButton extends StatelessWidget {
     this.backgroundColor,
     this.foregroundColor,
     this.fullWidth = true,
+    this.variant = AppButtonVariant.primary,
+    this.large = false,
+    this.horizontalPadding,
   });
 
   final String label;
@@ -22,77 +28,57 @@ class AppButton extends StatelessWidget {
   final Color? backgroundColor;
   final Color? foregroundColor;
   final bool fullWidth;
+  final AppButtonVariant variant;
+  final bool large;
+  final double? horizontalPadding;
 
   @override
   Widget build(BuildContext context) {
-    Widget buttonChild;
-
+    final effectiveVariant = isOutlined ? AppButtonVariant.secondary : variant;
+    final (background, foreground) = switch (effectiveVariant) {
+      AppButtonVariant.primary => (AppTheme.primary, AppTheme.surface),
+      AppButtonVariant.create => (AppTheme.ink, AppTheme.surface),
+      AppButtonVariant.lost => (AppTheme.lost, AppTheme.ink),
+      AppButtonVariant.found => (AppTheme.found, AppTheme.surface),
+      AppButtonVariant.secondary => (AppTheme.surface, AppTheme.ink),
+      AppButtonVariant.joined => (AppTheme.primaryTint, AppTheme.primaryDark),
+    };
+    final outlined = effectiveVariant == AppButtonVariant.secondary;
+    final style = AppTheme.buttonStyle(
+      backgroundColor: backgroundColor ?? background,
+      foregroundColor: foregroundColor ?? foreground,
+      outlined: outlined,
+      large: large,
+      horizontalPadding: horizontalPadding,
+    );
+    final Widget child;
     if (isLoading) {
-      buttonChild = const SizedBox(
-        height: 18,
-        width: 18,
+      child = SizedBox.square(
+        dimension: 18,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          color: AppTheme.placeholder,
+          semanticsLabel: label,
         ),
       );
-    } else if (icon != null) {
-      buttonChild = Row(
+    } else if (icon case final icon?) {
+      child = Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 16),
           const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+          Flexible(child: Text(label, textAlign: TextAlign.center)),
         ],
       );
     } else {
-      buttonChild = Text(label);
+      child = Text(label, textAlign: TextAlign.center);
     }
 
-    Widget button;
-
-    if (isOutlined) {
-      button = OutlinedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: foregroundColor ?? Colors.black,
-          side: const BorderSide(color: Color(0xFFE4E4E7), width: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: buttonChild,
-      );
-    } else {
-      button = ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor ?? Colors.black,
-          foregroundColor: foregroundColor ?? Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: buttonChild,
-      );
-    }
-
-    if (fullWidth) {
-      return SizedBox(
-        width: double.infinity,
-        child: button,
-      );
-    }
-
-    return button;
+    final action = isLoading ? null : onPressed;
+    final button = outlined
+        ? OutlinedButton(onPressed: action, style: style, child: child)
+        : ElevatedButton(onPressed: action, style: style, child: child);
+    return fullWidth ? SizedBox(width: double.infinity, child: button) : button;
   }
 }

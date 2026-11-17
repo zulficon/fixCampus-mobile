@@ -31,6 +31,7 @@ dependencies:
 
   # Yerel Tercihler
   shared_preferences: ^2.3.2
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   integration_test:
@@ -44,4 +45,12 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-
+    - assets/fonts/Inter-OFL.txt
+    - assets/fonts/BricolageGrotesque-OFL.txt
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
+    - family: Bricolage Grotesque
+      fonts:
+        - asset: assets/fonts/BricolageGrotesque.ttf
