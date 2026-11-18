@@ -144,12 +144,12 @@ class ProfileScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      IconButton(
-                        tooltip: 'Profili Düzenle',
-                        icon: const Icon(Icons.edit_outlined,
-                            size: 20, color: Color(0xFF52525B)),
-                        onPressed:
-                            auth.isLoading ? null : () => _editProfile(context),
+                      const SizedBox(width: 8),
+                      const SizedBox.square(
+                        dimension: 80,
+                        child: FittedBox(
+                          child: StickerSlot(sticker: CampusSticker.capybara),
+                        ),
                       ),
                     ],
                   ),
@@ -159,7 +159,9 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(8),
@@ -170,8 +172,11 @@ class ProfileScreen extends StatelessWidget {
                           Expanded(
                             child: Row(
                               children: [
-                                const Icon(Icons.school_outlined,
-                                    size: 16, color: Color(0xFF64748B)),
+                                const Icon(
+                                  Icons.school_outlined,
+                                  size: 16,
+                                  color: Color(0xFF64748B),
+                                ),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
@@ -195,8 +200,11 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           Row(
                             children: [
-                              const Icon(Icons.badge_outlined,
-                                  size: 16, color: Color(0xFF64748B)),
+                              const Icon(
+                                Icons.badge_outlined,
+                                size: 16,
+                                color: Color(0xFF64748B),
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 user.sinif ?? '4. Sınıf',
@@ -239,8 +247,11 @@ class ProfileScreen extends StatelessWidget {
                     'Şikâyetler ve kategori denetimleri',
                     style: TextStyle(color: Color(0xFFA1A1AA), fontSize: 12),
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios,
-                      size: 14, color: Colors.white),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Colors.white,
+                  ),
                   onTap: () {
                     Navigator.pushNamed(context, AppRoutes.adminPanel);
                   },
@@ -249,12 +260,16 @@ class ProfileScreen extends StatelessWidget {
 
             if (auth.email != null)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 child: Text(
                   auth.email!,
-                  style:
-                      const TextStyle(fontSize: 13, color: Color(0xFF71717A)),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF71717A),
+                  ),
                 ),
               ),
 
@@ -263,8 +278,10 @@ class ProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   auth.message!,
-                  style:
-                      const TextStyle(fontSize: 13, color: Color(0xFFDC2626)),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFFDC2626),
+                  ),
                 ),
               ),
 
@@ -274,14 +291,16 @@ class ProfileScreen extends StatelessWidget {
                 spacing: 12,
                 children: [
                   TextButton(
-                    onPressed:
-                        auth.isLoading ? null : () => _editProfile(context),
+                    onPressed: auth.isLoading
+                        ? null
+                        : () => _editProfile(context),
                     child: const Text('Profili düzenle'),
                   ),
                   if (user == null)
                     TextButton(
-                      onPressed:
-                          auth.isLoading ? null : () => auth.initialize(),
+                      onPressed: auth.isLoading
+                          ? null
+                          : () => auth.initialize(),
                       child: const Text('Tekrar dene'),
                     ),
                   TextButton(
@@ -323,7 +342,8 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   const SizedBox(width: 8),
                   TextButton(
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.myListings),
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.myListings),
                     child: const Text('Tümünü gör'),
                   ),
                 ],
@@ -351,7 +371,6 @@ class ProfileScreen extends StatelessWidget {
                 !loadingListings &&
                 listingsError == null)
               const EmptyState(
-                sticker: StickerSlot(sticker: CampusSticker.capybara),
                 icon: Icons.post_add_outlined,
                 title: 'Henüz İlanınız Yok',
                 description:
@@ -359,7 +378,6 @@ class ProfileScreen extends StatelessWidget {
               )
             else
               ...userListings.map((item) {
-
                 return ListingCard(
                   ilan: item,
                   isAttending: item.katiliyor,
@@ -456,60 +474,60 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        title: const Text('Profili düzenle'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _nameController,
-                maxLength: 100,
-                decoration: const InputDecoration(labelText: 'Ad soyad'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: _bolum,
-                decoration: const InputDecoration(labelText: 'Bölüm'),
-                items: _bolumler
-                    .map((b) => DropdownMenuItem(value: b, child: Text(b)))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _bolum = val);
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: _sinif,
-                decoration: const InputDecoration(labelText: 'Sınıf'),
-                items: _siniflar
-                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _sinif = val);
-                },
-              ),
-            ],
+    title: const Text('Profili düzenle'),
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _nameController,
+            maxLength: 100,
+            decoration: const InputDecoration(labelText: 'Ad soyad'),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Vazgeç'),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            initialValue: _bolum,
+            decoration: const InputDecoration(labelText: 'Bölüm'),
+            items: _bolumler
+                .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) setState(() => _bolum = val);
+            },
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(
-              context,
-              _EditProfileResult(
-                name: _nameController.text,
-                bolum: _bolum,
-                sinif: _sinif,
-              ),
-            ),
-            child: const Text('Kaydet'),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            initialValue: _sinif,
+            decoration: const InputDecoration(labelText: 'Sınıf'),
+            items: _siniflar
+                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) setState(() => _sinif = val);
+            },
           ),
         ],
-      );
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Vazgeç'),
+      ),
+      TextButton(
+        onPressed: () => Navigator.pop(
+          context,
+          _EditProfileResult(
+            name: _nameController.text,
+            bolum: _bolum,
+            sinif: _sinif,
+          ),
+        ),
+        child: const Text('Kaydet'),
+      ),
+    ],
+  );
 }
