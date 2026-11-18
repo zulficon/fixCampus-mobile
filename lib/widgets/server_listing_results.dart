@@ -41,10 +41,11 @@ class _ServerListingResultsState extends State<ServerListingResults> {
   int _request = 0;
   int? _pageOverride;
   late String _signature;
+  bool _waitingForInitialLoad = false;
 
   String get _currentSignature => jsonEncode([
     widget.query.copyWith(page: _pageOverride).toQueryParameters(),
-    widget.provider.dataRevision,
+    widget.provider.queryRevision,
     widget.provider.sessionRevision,
   ]);
 
@@ -52,7 +53,40 @@ class _ServerListingResultsState extends State<ServerListingResults> {
   void initState() {
     super.initState();
     _signature = _currentSignature;
-    Future.microtask(_fetch);
+    widget.provider.addListener(_providerChanged);
+    _scheduleFetch();
+  }
+
+  void _scheduleFetch() {
+    _waitingForInitialLoad = widget.provider.isInitializing;
+    if (_waitingForInitialLoad) return;
+    final scheduled = ++_request;
+    Future.microtask(() {
+      if (mounted && scheduled == _request) _fetch();
+    });
+  }
+
+  void _providerChanged() {
+    if (!mounted) return;
+    final changed = _signature != _currentSignature;
+    if (changed) {
+      _signature = _currentSignature;
+      ++_request;
+      _page = null;
+      _loading = true;
+      _error = null;
+      _scheduleFetch();
+    } else if (_waitingForInitialLoad && !widget.provider.isInitializing) {
+      _scheduleFetch();
+    }
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.provider.removeListener(_providerChanged);
+    ++_request;
+    super.dispose();
   }
 
   @override
@@ -62,6 +96,10 @@ class _ServerListingResultsState extends State<ServerListingResults> {
         jsonEncode(widget.query.toQueryParameters())) {
       _pageOverride = null;
     }
+    if (widget.provider != oldWidget.provider) {
+      oldWidget.provider.removeListener(_providerChanged);
+      widget.provider.addListener(_providerChanged);
+    }
     final next = _currentSignature;
     if (next != _signature || widget.provider != oldWidget.provider) {
       _signature = next;
@@ -69,7 +107,7 @@ class _ServerListingResultsState extends State<ServerListingResults> {
       _page = null;
       _error = null;
       _loading = true;
-      Future.microtask(_fetch);
+      _scheduleFetch();
     }
   }
 
@@ -109,7 +147,6 @@ class _ServerListingResultsState extends State<ServerListingResults> {
     } catch (error) {
       if (!mounted || version != _request) return;
       setState(() {
-        _page = null;
         _error = error is ApiException
             ? error.message
             : 'İlanlar yüklenemedi. Tekrar deneyin.';
@@ -123,21 +160,7 @@ class _ServerListingResultsState extends State<ServerListingResults> {
     }
   }
 
-  Future<void> _refresh() async {
-    final provider = widget.provider;
-    final session = provider.sessionRevision;
-    final request = _request;
-    await provider.load();
-    if (!mounted ||
-        provider != widget.provider ||
-        provider.sessionRevision != session ||
-        _request != request) {
-      return;
-    }
-    // Bu yenilemenin değiştirdiği veri sürümünü burada işledik.
-    _signature = _currentSignature;
-    await _fetch();
-  }
+  Future<void> _refresh() => _fetch();
 
   Future<void> _refreshAfterExpiry() async {
     if (_page == null && _loading) return;
@@ -149,7 +172,9 @@ class _ServerListingResultsState extends State<ServerListingResults> {
   Widget build(BuildContext context) {
     final page = _page;
     final result = ListingPaginationResult(
-      items: page?.items ?? const [],
+      items:
+          page?.items.map(widget.provider.withCurrentParticipation).toList() ??
+          const [],
       currentPage: page?.page ?? 1,
       totalPages: page?.totalPages ?? 1,
       totalItems: page?.totalCount ?? 0,
@@ -181,7 +206,22 @@ class ListingQueryStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const LinearProgressIndicator();
+    if (loading) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 12),
+            Flexible(child: Text('İlanlar yükleniyor…')),
+          ],
+        ),
+      );
+    }
     if (error == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.all(16),

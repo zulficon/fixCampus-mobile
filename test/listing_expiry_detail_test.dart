@@ -62,6 +62,13 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.text('Geliyorum'), findsOneWidget);
           expect(find.text('Katılımcı sayısı: 0'), findsOneWidget);
+          authService.profileFails = true;
+          await auth.initialize();
+          await tester.pumpAndSettle();
+          final button = tester.widget<ElevatedButton>(
+            find.widgetWithText(ElevatedButton, 'Geliyorum'),
+          );
+          expect(button.onPressed, isNull);
         }
       },
     );

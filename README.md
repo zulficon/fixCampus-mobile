@@ -56,6 +56,9 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
   dolunca API listesini otomatik yenileme, uygulamaya dönüşte yeniden kontrol ve
   detay ekranında süresi dolmuş buluşmaya katılımı kapatma. Kayıp/buluntuya süre uygulanmaz.
 
+- **Berna Kalkan:** Gerçek katılım servisi (PUT/DELETE /api/ilanlar/{id}/katilim), ilan sahibine katılımcı listesi, Radar tasarımı ve ortak harita bağlantısı tamamlandı. İlk yükleme, kart üzerinden katılım, tarih uyarısı ve oturum doğrulama geri bildirimleri için düzeltmeler eklendi.
+- Sonradan eklenecek sticker görselleri için alan ayrıldı. AvatarStack ve AppSwitch ortak bileşenleri sonraki ekranlarda kullanılacak.
+
 ## Uygulama ekranları
 
 - Açılış ve oturum durumuna göre yönlendirme.
@@ -70,7 +73,7 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
 
 İlanlar ve kategoriler ortak ASP.NET Core Web API üzerinden yüklenir.
 Oluşturma, detay okuma, güncelleme ve silme aynı Supabase verisi üzerinde çalışır.
-Katılım ve şikâyet düğmeleri sonraki haftaların ekran iskeletidir.
+Katılım ve geri alma ortak API üzerinden çalışır. İlan sahibi katılımcı listesini görebilir. Şikâyet ve bildirimler iskelettir.
 
 ## Çalıştırma
 
@@ -112,6 +115,8 @@ ve [hafta 3 doğrulama belgesinde](docs/hafta-03-api-baglantisi.md) bulunur.
 Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 
 ## Teknik belgeler
+
+- [Android canlı test gözlemleri ve geri bildirim düzeltmeleri](docs/hafta-05-android-canli-test.md)
 
 - [Sosyal ilan süre kuralı](docs/hafta-05-sure-kurali.md)
 

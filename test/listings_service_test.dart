@@ -188,7 +188,12 @@ void main() {
     adapter.status = 403;
     await expectLater(
       service.getParticipants(listingId),
-      throwsA(isA<ListingApiException>().having((e) => e.statusCode, 'status', 403)),
+      throwsA(
+        isA<ListingApiException>()
+            .having((e) => e.statusCode, 'status', 403)
+            .having((e) => e.message, 'mesaj',
+                'Katılımcı listesini yalnızca ilan sahibi görüntüleyebilir.'),
+      ),
     );
   });
 

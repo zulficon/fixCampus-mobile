@@ -123,6 +123,32 @@ void main() {
     expect(find.text('İlan yayınlandı.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('Geçerli yeni tarih önceki tarih uyarısını kaldırır', (
+    tester,
+  ) async {
+    final expired = service.items.first.copyWith(
+      bulusmaTarihi: DateTime.now().subtract(const Duration(days: 1)),
+    );
+    await open(tester, screen: CreateListingScreen(ilan: expired));
+    await submit(tester, edit: true);
+    const error = 'Sosyal ilan için gelecekte bir buluşma zamanı seçin.';
+    expect(find.text(error), findsOneWidget);
+    final dateButton = find.widgetWithIcon(OutlinedButton, Icons.schedule);
+    await tester.ensureVisible(dateButton);
+    await tester.tap(dateButton);
+    await tester.pumpAndSettle();
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    tester
+        .widget<CalendarDatePicker>(find.byType(CalendarDatePicker))
+        .onDateChanged(tomorrow);
+    await tester.tap(find.text('OK').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK').last);
+    await tester.pumpAndSettle();
+    expect(find.text(error), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Oturum kaybı açık formdan gönderimi kapatır', (tester) async {
     await open(tester);
     await fillLost(tester);

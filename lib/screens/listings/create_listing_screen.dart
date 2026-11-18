@@ -31,6 +31,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   String? _kategoriId;
   DateTime? _tarih;
   String? _error;
+  String? _dateError;
   bool _saving = false;
   static const _validator = ListingValidator();
 
@@ -80,15 +81,16 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
       initialTime: TimeOfDay.fromDateTime(initial),
     );
     if (!mounted || time == null) return;
-    setState(
-      () => _tarih = DateTime(
+    setState(() {
+      _tarih = DateTime(
         date.year,
         date.month,
         date.day,
         time.hour,
         time.minute,
-      ),
-    );
+      );
+      _dateError = _validator.meetingDate(_tur, _tarih);
+    });
   }
 
   Future<void> _submit() async {
@@ -100,12 +102,13 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     }
     final dateError = _validator.meetingDate(_tur, _tarih);
     if (dateError != null) {
-      setState(() => _error = dateError);
+      setState(() => _dateError = dateError);
       return;
     }
     setState(() {
       _saving = true;
       _error = null;
+      _dateError = null;
     });
     final provider = context.read<ListingsProvider>();
     final request = SaveListingRequest(
@@ -141,11 +144,19 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(
-          () => _error = e is ApiException
-              ? e.message
-              : 'İlan kaydedilemedi. Tekrar deneyin.',
-        );
+        setState(() {
+          if (e is ListingApiException &&
+              e.fieldErrors.isNotEmpty &&
+              e.fieldErrors.keys.every(
+                (key) => key.toLowerCase() == 'bulusmatarihi',
+              )) {
+            _dateError = e.message;
+          } else {
+            _error = e is ApiException
+                ? e.message
+                : 'İlan kaydedilemedi. Tekrar deneyin.';
+          }
+        });
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -210,7 +221,9 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.ilan == null ? 'Yeni İlan' : 'İlan Bilgileri',
+                            widget.ilan == null
+                                ? 'Yeni İlan'
+                                : 'İlan Bilgileri',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -264,6 +277,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                         _tur = value!;
                         _kategoriId = null;
                         _tarih = null;
+                        _dateError = null;
                       }),
               ),
               const SizedBox(height: 16),
@@ -376,6 +390,16 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                   ),
                 ),
               ],
+              if (_dateError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    _dateError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
               if (_error != null) ...[
                 const SizedBox(height: 16),
                 Container(

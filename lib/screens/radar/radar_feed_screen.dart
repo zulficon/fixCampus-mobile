@@ -127,6 +127,7 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -144,6 +145,7 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
                 title: Text(location.key),
                 trailing: const Icon(Icons.open_in_new, size: 18),
                 onTap: () async {
+                  Navigator.pop(sheetContext);
                   try {
                     if (await launchUrl(
                       location.value,
@@ -154,7 +156,11 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
                   } catch (_) {
                     // The address remains visible if the device has no map handler.
                   }
-                  if (mounted) _message('Harita açılamadı.');
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('Harita açılamadı.')),
+                    );
+                  }
                 },
               ),
           ],

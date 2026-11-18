@@ -117,7 +117,11 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
 
   Future<void> _setParticipation(Ilan ilan) async {
     final provider = context.read<ListingsProvider>();
-    if (provider.isSaving ||
+    final auth = context.read<AuthProvider>();
+    if (auth.currentUser == null ||
+        auth.hasSessionError ||
+        auth.isLoading ||
+        provider.isSaving ||
         const ListingExpiryPolicy().isExpired(ilan, DateTime.now())) {
       return;
     }
@@ -159,7 +163,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
           child: FutureBuilder<List<ListingParticipant>>(
             future: participants ??= provider.getParticipants(ilan.id),
             builder: (context, snapshot) {
-              if (context.watch<ListingsProvider>().sessionRevision != session) {
+              if (context.watch<ListingsProvider>().sessionRevision !=
+                  session) {
                 return const Text('Oturum değişti. Listeyi yeniden açın.');
               }
               if (snapshot.connectionState != ConnectionState.done) {
@@ -506,7 +511,11 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                           ? Icons.undo
                           : Icons.group_add_outlined,
                       isOutlined: ilan.katiliyor,
-                      onPressed: auth.currentUser == null || provider.isSaving
+                      onPressed:
+                          auth.currentUser == null ||
+                              auth.hasSessionError ||
+                              auth.isLoading ||
+                              provider.isSaving
                           ? null
                           : () => _setParticipation(ilan),
                     ),

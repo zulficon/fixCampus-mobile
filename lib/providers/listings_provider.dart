@@ -21,11 +21,27 @@ class ListingsProvider extends ChangeNotifier {
   String? _userId;
   int _sessionVersion = 0;
   int _dataVersion = 0;
+  int _queryVersion = 0;
+  bool _hasLoaded = false;
+  final Map<String, Ilan> _participationUpdates = {};
   int _loadVersion = 0;
 
   List<Kategori> get kategoriler => List.unmodifiable(_kategoriler);
   List<Ilan> get ilanlar => List.unmodifiable(_ilanlar);
   int get dataRevision => _dataVersion;
+  int get queryRevision => _queryVersion;
+  bool get isInitializing => _isLoading && !_hasLoaded;
+
+  Ilan withCurrentParticipation(Ilan listing) {
+    final updated = _participationUpdates[listing.id];
+    return updated == null
+        ? listing
+        : listing.copyWith(
+            katilimciSayisi: updated.katilimciSayisi,
+            katiliyor: updated.katiliyor,
+          );
+  }
+
   int get sessionRevision => _sessionVersion;
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
@@ -41,6 +57,8 @@ class ListingsProvider extends ChangeNotifier {
     final version = ++_sessionVersion;
     ++_loadVersion;
     _ilanlar = [];
+    _hasLoaded = false;
+    _participationUpdates.clear();
     _myListings = [];
     _myListingsError = null;
     _isLoadingMyListings = false;
@@ -118,8 +136,11 @@ class ListingsProvider extends ChangeNotifier {
       _kategoriler = results[0] as List<Kategori>;
       if (data == _dataVersion) {
         _ilanlar = List.of(results[1] as List<Ilan>);
+        _participationUpdates.clear();
         ++_dataVersion;
+        if (_hasLoaded) ++_queryVersion;
       }
+      _hasLoaded = true;
       return true;
     } catch (e) {
       if (_isCurrent(session) && load == _loadVersion) _error = _message(e);
@@ -136,8 +157,16 @@ class ListingsProvider extends ChangeNotifier {
   /// Ekran, filtre değişince ListingQuery(page: 1, ...) ile tekrar sorgular.
   Future<ListingPage> searchListings(ListingQuery query) async {
     final session = _sessionVersion;
+    final data = _dataVersion;
     final result = await _requireService().searchListings(query);
     _checkSession(session);
+    if (data == _dataVersion) {
+      for (final listing in result.items) {
+        if (_participationUpdates.containsKey(listing.id)) {
+          _participationUpdates[listing.id] = listing;
+        }
+      }
+    }
     return result;
   }
 
@@ -175,8 +204,9 @@ class ListingsProvider extends ChangeNotifier {
 
   Future<T> _save<T>(
     Future<T> Function() action,
-    void Function(T) apply,
-  ) async {
+    void Function(T) apply, {
+    bool refreshQueries = true,
+  }) async {
     if (_isSaving) {
       throw const ApiException(ApiFailure.http, 'Devam eden işlemi bekleyin.');
     }
@@ -187,6 +217,7 @@ class ListingsProvider extends ChangeNotifier {
       final result = await action();
       _checkSession(session);
       ++_dataVersion;
+      if (refreshQueries) ++_queryVersion;
       apply(result);
       return result;
     } finally {
@@ -207,6 +238,7 @@ class ListingsProvider extends ChangeNotifier {
   }
 
   void _applyListing(Ilan listing) {
+    _participationUpdates.remove(listing.id);
     _upsert(listing);
     if (listing.sahipId != _userId) return;
     ++_myListingsRevision;
@@ -215,6 +247,7 @@ class ListingsProvider extends ChangeNotifier {
   }
 
   void _removeListing(String id) {
+    _participationUpdates.remove(id);
     _ilanlar.removeWhere((item) => item.id == id);
     ++_myListingsRevision;
     _myListings.removeWhere((item) => item.id == id);
@@ -255,7 +288,11 @@ class ListingsProvider extends ChangeNotifier {
 
   Future<Ilan> setParticipation(String id, {required bool attending}) => _save(
     () => _requireService().setParticipation(id, attending: attending),
-    _applyListing,
+    (listing) {
+      _applyListing(listing);
+      _participationUpdates[listing.id] = listing;
+    },
+    refreshQueries: false,
   );
 
   @override

@@ -154,6 +154,8 @@ class ApiListingsService implements ListingsService {
       );
     }),
     200,
+    forbiddenMessage:
+        'Katılımcı listesini yalnızca ilan sahibi görüntüleyebilir.',
   );
 
   String _path(String id) =>
@@ -162,8 +164,9 @@ class ApiListingsService implements ListingsService {
   Future<T> _request<T>(
     Future<Response<Object>> Function() send,
     T Function(Object?) decode,
-    int expectedStatus,
-  ) async {
+    int expectedStatus, {
+    String forbiddenMessage = 'Bu işlem için yetkiniz yok.',
+  }) async {
     try {
       final response = await send();
       if (response.statusCode != expectedStatus) {
@@ -215,8 +218,7 @@ class ApiListingsService implements ListingsService {
               ? 'İlan bilgilerini kontrol edin.'
               : messages.join('\n'),
         401 => 'Oturumunuz geçersiz veya süresi dolmuş. Yeniden giriş yapın.',
-        403 =>
-          'Bu işlem için yetkiniz yok. İlanı yalnızca sahibi değiştirebilir.',
+        403 => forbiddenMessage,
         404 => 'İlan bulunamadı veya artık erişilemiyor.',
         409 => 'Bu ilan katılıma açık değil.',
         _ => 'İlan servisi şu anda kullanılamıyor. Tekrar deneyin.',

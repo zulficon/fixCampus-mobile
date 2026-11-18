@@ -75,12 +75,20 @@ void main() {
   testWidgets('Kayıt ekranı geçerli ad ve parola ile profil oluşturur',
       (tester) async {
     await mount(tester, const RegisterScreen());
-    await tester.enterText(find.byType(TextField).at(0), 'Berna Kalkan');
+    await tester.enterText(find.byType(TextField).at(0), 'Çağrı Şenışık Öztürk');
     await tester.enterText(find.byType(TextField).at(1), 'berna@example.com');
     await tester.enterText(find.byType(TextField).at(2), 'password123');
+    final department = find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.decoration?.hintText == 'Bölümünüz',
+    );
+    await tester.ensureVisible(department);
+    await tester.enterText(department, 'Bilgisayar Mühendisliği');
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Kayıt Ol'));
     await tester.tap(find.widgetWithText(ElevatedButton, 'Kayıt Ol'));
     await tester.pumpAndSettle();
-    expect(auth.currentUser?.adSoyad, 'Berna Kalkan');
+    expect(auth.currentUser?.adSoyad, 'Çağrı Şenışık Öztürk');
+    expect(service.lastSavedBolum, 'Bilgisayar Mühendisliği');
     expect(auth.isAdmin, false);
     expect(find.text('Oturum açıldı'), findsOneWidget);
   });

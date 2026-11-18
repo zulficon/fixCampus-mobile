@@ -163,6 +163,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 6),
               TextField(
                 controller: _nameController,
+                keyboardType: TextInputType.name,
+                autofillHints: const [AutofillHints.name],
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   hintText: 'Ad Soyad',
@@ -282,6 +284,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const SizedBox(height: 6),
                         TextField(
                           controller: _bolumController,
+                          keyboardType: TextInputType.text,
+                          textCapitalization: TextCapitalization.words,
                           decoration: const InputDecoration(
                             hintText: 'Bölümünüz',
                             prefixIcon: Icon(Icons.account_balance_outlined,

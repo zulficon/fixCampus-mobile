@@ -256,4 +256,95 @@ void main() {
     expect(find.text('Baglanti yok'), findsOneWidget);
     expect(find.text('0 sonuc'), findsNothing);
   });
+  testWidgets('İlk yükleme biterken sayfalı sorgu yalnızca bir kez yapılır', (
+    tester,
+  ) async {
+    final service = FakeListingsService()
+      ..pendingList = Completer<List<Ilan>>();
+    final provider = ListingsProvider(service: service)..setSession(ownerId);
+    addTearDown(provider.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ServerListingResults(
+          provider: provider,
+          query: const ListingQuery(),
+          builder: (page, loading, error, refresh) =>
+              Text(loading ? 'Bekleniyor' : '${page.items.length} kayıt'),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(service.queries, isEmpty);
+    service.pendingList!.complete(service.items);
+    await tester.pumpAndSettle();
+    expect(service.queries, hasLength(1));
+    expect(find.text('1 kayıt'), findsOneWidget);
+  });
+
+  testWidgets('Katıl ve geri al sayfayı boşaltmaz veya yeniden sorgulamaz', (
+    tester,
+  ) async {
+    final service = FakeListingsService();
+    final provider = ListingsProvider(service: service);
+    addTearDown(provider.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ServerListingResults(
+          provider: provider,
+          query: const ListingQuery(),
+          builder: (page, loading, error, refresh) => Column(
+            children: [
+              for (final listing in page.items)
+                Text(
+                  '${listing.id}:${listing.katilimciSayisi}:${listing.katiliyor}',
+                ),
+              TextButton(onPressed: refresh, child: const Text('Yenile')),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    for (final attending in [true, false]) {
+      await provider.setParticipation(listingId, attending: attending);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('$listingId:${attending ? 1 : 0}:$attending'),
+        findsOneWidget,
+      );
+      expect(service.queries, hasLength(1));
+    }
+    await tester.tap(find.text('Yenile'));
+    await tester.pumpAndSettle();
+    expect(service.queries, hasLength(2));
+  });
+
+  testWidgets('Arka plan yenilemesi başarısızsa görünen kart korunur', (
+    tester,
+  ) async {
+    final service = FakeListingsService();
+    final provider = ListingsProvider(service: service);
+    addTearDown(provider.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ServerListingResults(
+          provider: provider,
+          query: const ListingQuery(),
+          builder: (page, loading, error, refresh) => Column(
+            children: [
+              for (final listing in page.items) Text(listing.baslik),
+              if (error != null) Text(error),
+              TextButton(onPressed: refresh, child: const Text('Yenile')),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    service.error = const ApiException(ApiFailure.connection, 'Çevrimdışı');
+    await tester.tap(find.text('Yenile'));
+    await tester.pumpAndSettle();
+    expect(find.text('API ilanı'), findsOneWidget);
+    expect(find.text('Çevrimdışı'), findsOneWidget);
+  });
 }
