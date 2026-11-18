@@ -7,6 +7,7 @@ import '../../routes/app_routes.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/listing_card.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/sticker_slot.dart';
 
 /// Profil Ekranı (Kullanıcı Bilgileri, Bölüm, Sınıf, İlanlarım, Oturum ve Düzenleme)
 class ProfileScreen extends StatelessWidget {
@@ -350,6 +351,7 @@ class ProfileScreen extends StatelessWidget {
                 !loadingListings &&
                 listingsError == null)
               const EmptyState(
+                sticker: StickerSlot(sticker: CampusSticker.capybara),
                 icon: Icons.post_add_outlined,
                 title: 'Henüz İlanınız Yok',
                 description:

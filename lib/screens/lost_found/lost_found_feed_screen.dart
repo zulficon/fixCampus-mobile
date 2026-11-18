@@ -5,6 +5,9 @@ import '../../providers/listings_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/listing_search_filter.dart';
 import '../../widgets/app_segmented_control.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/sticker_slot.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/category_chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/listing_card.dart';
@@ -207,6 +210,52 @@ class _LostFoundFeedScreenState extends State<LostFoundFeedScreen> {
                       onSelected: (index) => _selectTur(
                         const [null, IlanTuru.kayip, IlanTuru.buluntu][index],
                         listingsProvider.kategoriler,
+                      ),
+                    ),
+                  ),
+                ),
+
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.lostTint2,
+                        borderRadius: BorderRadius.circular(AppTheme.bannerRadius),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(18, 18, 0, 18),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Bir şey mi buldun?',
+                                    style: AppTheme.section.copyWith(fontSize: 19),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'İlan ver, sahibine ulaşmasına yardımcı ol.',
+                                    style: AppTheme.body.copyWith(fontSize: 13, color: AppTheme.inkSoft),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  AppButton(
+                                    label: 'İlan ver',
+                                    variant: AppButtonVariant.create,
+                                    fullWidth: false,
+                                    onPressed: () => Navigator.pushNamed(context, AppRoutes.createListing),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: CampusSticker.raccoon.textClearance,
+                            child: const StickerSlot(sticker: CampusSticker.raccoon),
+                          ),
+                        ],
                       ),
                     ),
                   ),

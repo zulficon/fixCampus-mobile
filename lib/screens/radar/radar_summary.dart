@@ -44,7 +44,7 @@ class _RadarSummaryState extends State<RadarSummary>
 
   @override
   Widget build(BuildContext context) {
-    const pigeon = CampusSticker.pigeon;
+    const goose = CampusSticker.goose;
     final scale = MediaQuery.textScalerOf(context).scale(13) / 13;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -124,9 +124,9 @@ class _RadarSummaryState extends State<RadarSummary>
                 ),
               ),
               Positioned(
-                right: pigeon.right,
-                bottom: pigeon.bottom,
-                child: const StickerSlot(sticker: pigeon),
+                right: goose.right,
+                bottom: goose.bottom,
+                child: const StickerSlot(sticker: goose),
               ),
             ],
           ),

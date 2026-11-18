@@ -27,7 +27,7 @@
 - Harita konumuna dokunulunca panel kapanır. Harita açılmazsa hata ana ekranda gösterilir.
 - Katılımcı listesi için 403 mesajı ilan sahibinin görüntüleme yetkisini açıklar. API bu uçta yalnızca ilan sahibine izin verir.
 - Ad Soyad ve Bölüm alanlarında Türkçe karakter engelleyen filtre bulunmadı. Kayıt ekranında “Çağrı Şenışık Öztürk” ve “Bilgisayar Mühendisliği” değerlerinin korunması otomatik testle doğrulandı. Fiziksel/emülatör klavye düzeni için canlı yeniden deneme bekleniyor. Emülatörde Türkçe ekran klavyesiyle ı, İ, ş, ğ, ü, ö, ç karakterleri ayrıca denenmeli.
-- StickerSlot sonradan verilecek görseller için alan ayırır. AvatarStack ve AppSwitch sonraki ekranların ortak bileşenleridir. Bildirimler menüsü henüz iskelettir.
+- StickerSlot, uygulamaya gömülü şeffaf kaz, rakun ve kapibara görsellerini gösterir. Radar özeti, Kayıp-Buluntu bilgi kartı ve Profilin boş ilan alanı bu görselleri kullanır. AvatarStack ve AppSwitch sonraki ekranların ortak bileşenleridir. Bildirimler menüsü henüz iskelettir.
 - Ortak .NET LiveChecks akışına katılımcı listesinin OpenAPI kaydı, 401/403, ilan sahibi için 200, katılım sonrası liste içeriği, geri alma sonrası boş liste ve bulunamayan ilan kontrolleri eklendi. Bu senaryonun canlı çalıştırılması iki test hesabıyla ayrıca yapılmalı.
 
 17 Kasım gözlemleri tarihsel kayıt olarak korundu. Yukarıdaki kod değişiklikleri cihazdaki canlı tekrarın yerine geçmez.

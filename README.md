@@ -57,7 +57,7 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
   detay ekranında süresi dolmuş buluşmaya katılımı kapatma. Kayıp/buluntuya süre uygulanmaz.
 
 - **Berna Kalkan:** Gerçek katılım servisi (PUT/DELETE /api/ilanlar/{id}/katilim), ilan sahibine katılımcı listesi, Radar tasarımı ve ortak harita bağlantısı tamamlandı. İlk yükleme, kart üzerinden katılım, tarih uyarısı ve oturum doğrulama geri bildirimleri için düzeltmeler eklendi.
-- Sonradan eklenecek sticker görselleri için alan ayrıldı. AvatarStack ve AppSwitch ortak bileşenleri sonraki ekranlarda kullanılacak.
+- Radar özetine kaz, Kayıp-Buluntu bilgi kartına anahtarlı rakun ve Profilde boş ilan alanına kapibara stickerları eklendi. Görseller uygulamaya gömülüdür ve çevrimdışı görünür. AvatarStack ve AppSwitch ortak bileşenleri sonraki ekranlarda kullanılacak.
 
 ## Uygulama ekranları
 
