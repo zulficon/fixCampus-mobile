@@ -14,7 +14,7 @@ Tümünü gör bağlantısı da aynı tam sayfaya gider; mevcut profil listesi k
   içinde filtreleme yapar. Görünen sayı seçili türün sayısıdır. Yenilemede tür
   seçimi korunur; hesap değiştiğinde Tümü seçeneğine dönülür.
 - Seçili türde kayıt yoksa bu durum hesabın tamamen boş olmasından ayrı gösterilir.
-- Açılışta ve yenilemede mevcut `load` işlemi kullanılır. Üst çubuktaki yenileme
+- Açılışta ve yenilemede `loadMyListings` kullanılır. Üst çubuktaki yenileme
   düğmesi ve çekerek yenileme, boş listede de çalışır.
 - Yükleniyor, ilk istek hatası, yenileme hatası ve gerçekten boş sonuç ayrıdır.
   Yenileme hatasında önceki kayıtlar hata mesajıyla birlikte korunur.
@@ -22,10 +22,10 @@ Tümünü gör bağlantısı da aynı tam sayfaya gider; mevcut profil listesi k
   düzenleme/silme işlemleri mevcut API ve sahiplik kontrollerinden geçer.
   Ortak Provider bildirimleri başarıyla değiştirilen kayıtları bu listeye yansıtır.
 
-Bu ekran mevcut API'den yüklenen ortak ilan listesini kullanır. Sunucuda kullanıcı
-sorgusu veya sayfalama eklemez. Arama ekranlarının sunucu sayfalaması ayrı
-`searchListings` çağrısını kullanır; bu sayfa hâlen sayfalanmamış `getListings`
-sonuçlarından beslenir. Ortak liste de sayfalanırsa kullanıcıya özel sorgu gerekir.
+İlanlarım ve Profildeki önizleme, oturum belirteciyle `GET /api/ilanlar/benim`
+ucunu kullanır. Kişisel liste ortak akıştan ayrı tutulduğu için geçmiş sosyal
+buluşmalar da sahibine görünür. Hesap değişince kişisel liste temizlenir ve
+önceki hesaptan gecikmiş yanıtlar uygulanmaz.
 
 `test/my_listings_screen_test.dart`; sahiplik filtresini, yönetici hesabını,
 sıralamayı, yenilemeyi, hata/boş durumlarını, detay/oluşturma rotalarını,

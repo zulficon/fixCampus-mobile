@@ -33,7 +33,7 @@ void main() {
           }),
         ];
       final listingsProvider = ListingsProvider(service: service);
-      await listingsProvider.load();
+      listingsProvider.setSession(authProvider.currentUser?.id);
 
       await tester.pumpWidget(
         MultiProvider(

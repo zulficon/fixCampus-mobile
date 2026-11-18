@@ -44,7 +44,7 @@ class _MyListingsContentState extends State<_MyListingsContent> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final provider = context.read<ListingsProvider>();
-      if (!provider.isLoading) provider.load();
+      provider.loadMyListings();
     });
   }
 
@@ -52,29 +52,31 @@ class _MyListingsContentState extends State<_MyListingsContent> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final provider = context.watch<ListingsProvider>();
-    final ownItems = provider.getUserListings(auth.currentUser!.id);
+    final userId = auth.currentUser?.id;
+    final ownItems = provider.getUserListings(userId);
     final items =
         ownItems.where((item) => _type == null || item.tur == _type).toList()
           ..sort((a, b) {
             final date = b.olusturulmaTarihi.compareTo(a.olusturulmaTarihi);
             return date != 0 ? date : a.id.compareTo(b.id);
           });
-    final error = provider.error;
+    final error = provider.myListingsError;
+    final loading = provider.isLoadingMyListings;
     return Scaffold(
       appBar: AppBar(
         title: const Text('İlanlarım'),
         actions: [
           IconButton(
             tooltip: 'İlanlarımı yenile',
-            onPressed: provider.isLoading ? null : provider.load,
+            onPressed: loading || userId == null
+                ? null
+                : provider.loadMyListings,
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          await provider.load();
-        },
+        onRefresh: provider.loadMyListings,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
@@ -98,7 +100,7 @@ class _MyListingsContentState extends State<_MyListingsContent> {
                 ],
               ),
             ),
-            if (provider.isLoading) const LinearProgressIndicator(),
+            if (loading) const LinearProgressIndicator(),
             if (error != null)
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -106,13 +108,13 @@ class _MyListingsContentState extends State<_MyListingsContent> {
                   children: [
                     Text(error, textAlign: TextAlign.center),
                     TextButton(
-                      onPressed: provider.isLoading ? null : provider.load,
+                      onPressed: loading ? null : provider.loadMyListings,
                       child: const Text('Tekrar dene'),
                     ),
                   ],
                 ),
               ),
-            if (!provider.isLoading && error == null && items.isEmpty)
+            if (userId != null && !loading && error == null && items.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(

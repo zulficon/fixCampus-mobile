@@ -24,11 +24,28 @@ void main() {
       expect(provider.ilanlar.single.id, listingId);
       expect(provider.kategoriler.first.id, categoryId);
       expect(provider.radarListings.single.id, listingId);
-      expect(provider.getUserListings(ownerId).single.id, listingId);
       expect(provider.getLostFoundListings(), isEmpty);
       expect(() => provider.ilanlar.clear(), throwsUnsupportedError);
     },
   );
+
+  test('Önceki hesabın geciken kişisel ilan yanıtı uygulanmaz', () async {
+    final pending = Completer<List<Ilan>>();
+    service.pendingMyListings = pending;
+    provider.setSession(ownerId);
+    await Future<void>.delayed(Duration.zero);
+    service.pendingMyListings = null;
+    service.personalItems = [
+      Ilan.fromJson({...listingJson(id: 'new'), 'sahipId': 'second'}),
+    ];
+    provider.setSession('second');
+    await Future<void>.delayed(Duration.zero);
+    pending.complete([Ilan.fromJson(listingJson())]);
+    await Future<void>.delayed(Duration.zero);
+    expect(provider.getUserListings('second').single.id, 'new');
+    expect(provider.getUserListings(ownerId), isEmpty);
+    expect(provider.getUserListings(null), isEmpty);
+  });
 
   test('CRUD onayından sonra sunucu kimliği ve yanıtı uygulanır', () async {
     await provider.load();

@@ -10,6 +10,10 @@ class ListingsProvider extends ChangeNotifier {
   final ListingsService? _service;
   List<Kategori> _kategoriler = [];
   List<Ilan> _ilanlar = [];
+  List<Ilan> _myListings = [];
+  bool _isLoadingMyListings = false;
+  String? _myListingsError;
+  int _myListingsRevision = 0;
   bool _isLoading = false;
   bool _isSaving = false;
   bool _disposed = false;
@@ -26,6 +30,8 @@ class ListingsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get error => _error;
+  bool get isLoadingMyListings => _isLoadingMyListings;
+  String? get myListingsError => _myListingsError;
 
   /// ProxyProvider güncellemesi sırasında eski hesap verisi hemen temizlenir.
   /// Bildirim ve yükleme build bittikten sonra yapılır.
@@ -35,6 +41,9 @@ class ListingsProvider extends ChangeNotifier {
     final version = ++_sessionVersion;
     ++_loadVersion;
     _ilanlar = [];
+    _myListings = [];
+    _myListingsError = null;
+    _isLoadingMyListings = false;
     _kategoriler = [];
     _error = null;
     _isSaving = false;
@@ -42,7 +51,7 @@ class ListingsProvider extends ChangeNotifier {
     Future.microtask(() async {
       if (!_isCurrent(version)) return;
       _notify();
-      if (userId != null) await load();
+      if (userId != null) await Future.wait([load(), loadMyListings()]);
     });
   }
 
@@ -55,8 +64,41 @@ class ListingsProvider extends ChangeNotifier {
     return lostFound && (turFilter == null || i.tur == turFilter);
   }).toList();
 
-  List<Ilan> getUserListings(String userId) =>
-      _ilanlar.where((i) => i.sahipId == userId).toList();
+  List<Ilan> getUserListings(String? userId) =>
+      userId != null && userId == _userId ? List.of(_myListings) : const [];
+
+  Future<void> loadMyListings() async {
+    final userId = _userId;
+    if (userId == null || _isLoadingMyListings || _disposed) return;
+    final session = _sessionVersion;
+    _isLoadingMyListings = true;
+    _myListingsError = null;
+    _notify();
+    try {
+      final service = _requireService();
+      while (_isCurrent(session)) {
+        final revision = _myListingsRevision;
+        final items = await service.getMyListings();
+        if (!_isCurrent(session)) return;
+        // İstek sürerken yapılan değişikliği eski yanıtla ezme.
+        if (revision != _myListingsRevision) continue;
+        _myListings = items
+            .where(
+              (item) =>
+                  item.sahipId == userId && item.durum != IlanDurumu.gizli,
+            )
+            .toList();
+        break;
+      }
+    } catch (error) {
+      if (_isCurrent(session)) _myListingsError = _message(error);
+    } finally {
+      if (_isCurrent(session)) {
+        _isLoadingMyListings = false;
+        _notify();
+      }
+    }
+  }
 
   Future<bool> load() async {
     final session = _sessionVersion;
@@ -112,28 +154,24 @@ class ListingsProvider extends ChangeNotifier {
       }
       return ilan;
     } on ListingApiException catch (e) {
-      if (_isCurrent(session) && e.statusCode == 404) {
-        _ilanlar.removeWhere((i) => i.id == id);
+      if (_isCurrent(session) && data == _dataVersion && e.statusCode == 404) {
+        _removeListing(id);
         _notify();
       }
       rethrow;
     }
   }
 
-  Future<Ilan> createListing(SaveListingRequest request) => _save(
-    () => _requireService().createListing(request),
-    (ilan) => _upsert(ilan),
-  );
+  Future<Ilan> createListing(SaveListingRequest request) =>
+      _save(() => _requireService().createListing(request), _applyListing);
 
-  Future<Ilan> updateListing(String id, SaveListingRequest request) => _save(
-    () => _requireService().updateListing(id, request),
-    (ilan) => _upsert(ilan),
-  );
+  Future<Ilan> updateListing(String id, SaveListingRequest request) =>
+      _save(() => _requireService().updateListing(id, request), _applyListing);
 
-  Future<void> deleteListing(String id) =>
-      _save<void>(() => _requireService().deleteListing(id), (_) {
-        _ilanlar.removeWhere((i) => i.id == id);
-      });
+  Future<void> deleteListing(String id) => _save<void>(
+    () => _requireService().deleteListing(id),
+    (_) => _removeListing(id),
+  );
 
   Future<T> _save<T>(
     Future<T> Function() action,
@@ -166,6 +204,20 @@ class ListingsProvider extends ChangeNotifier {
     } else {
       _ilanlar[index] = ilan;
     }
+  }
+
+  void _applyListing(Ilan listing) {
+    _upsert(listing);
+    if (listing.sahipId != _userId) return;
+    ++_myListingsRevision;
+    _myListings.removeWhere((item) => item.id == listing.id);
+    if (listing.durum != IlanDurumu.gizli) _myListings.insert(0, listing);
+  }
+
+  void _removeListing(String id) {
+    _ilanlar.removeWhere((item) => item.id == id);
+    ++_myListingsRevision;
+    _myListings.removeWhere((item) => item.id == id);
   }
 
   ListingsService _requireService() =>
@@ -203,7 +255,7 @@ class ListingsProvider extends ChangeNotifier {
 
   Future<Ilan> setParticipation(String id, {required bool attending}) => _save(
     () => _requireService().setParticipation(id, attending: attending),
-    _upsert,
+    _applyListing,
   );
 
   @override

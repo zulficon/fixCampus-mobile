@@ -11,16 +11,16 @@ arka plandan döndüğünde de kontrol yapar. Tarih değişince zamanlayıcı ye
 kurulur; widget kapandığında zamanlayıcı ve yaşam döngüsü dinleyicisi kaldırılır.
 
 `ExpiryAwareListingResults`, mevcut `ServerListingResults` bileşenini sarar.
-Radar ve Arama ekranlarında süresi dolan kart hemen kaldırılır ve mevcut API
-yenilemesi çalıştırılır. Toplam kayıt/sayfa bilgisi yerelde tahmin edilmez;
-API'nin yeni yanıtı kullanılır. Son sayfanın boşalması mevcut sunucu sayfa
-düzeltme akışından geçer. Yenileme başarısızsa mevcut hata/tekrar deneme akışı sürer.
+Radar ve Arama ekranlarında süre dolunca eski sonuç sayfası kaldırılır.
+Yeni sayfa yüklenene kadar sonuç sayısı veya boş liste mesajı gösterilmez.
+Süre yenilemesi sadece sayfalı sorguyu çalıştırır. Kartlar ve toplam kayıt/sayfa
+bilgisi aynı API yanıtından gelir. Son sayfanın boşalması mevcut sayfa düzeltme
+akışından geçer. Hata durumunda tekrar deneme seçeneği sunulur.
 
 Detay ekranı süre dolunca katılım düğmesini kapatır ve süre mesajı gösterir.
 Düğmenin tıklanma anında da tarih tekrar kontrol edilir. Mevcut sahiplik
-kurallarıyla düzenleme/silme erişimi korunur. Katılım düğmesinin mevcut yerel
-Provider davranışı bu değişiklikle gerçek katılım servisine dönüştürülmez;
-bu servis ekip planında ayrı bir görevdir.
+kurallarıyla düzenleme/silme erişimi korunur. Katılım düğmesi güncel sürümde
+ortak katılım servisini kullanır.
 
 Bu kod mobil depoda uygulanmıştır. Ortak API'nin mevcut `ListingQueries.Filter`
 kuralı sosyal buluşma tarihini `şimdi` değerinden büyük olacak şekilde filtreler;

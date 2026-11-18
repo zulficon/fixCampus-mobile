@@ -42,6 +42,7 @@ abstract class ListingsService {
   Future<List<ListingParticipant>> getParticipants(String id);
   Future<List<Kategori>> getCategories();
   Future<List<Ilan>> getListings();
+  Future<List<Ilan>> getMyListings();
 
   Future<ListingPage> searchListings(ListingQuery query);
   Future<Ilan> getListing(String id);
@@ -77,6 +78,13 @@ class ApiListingsService implements ListingsService {
   @override
   Future<List<Ilan>> getListings() => _request(
     () => api.dio.get<Object>(ApiEndpoints.listings),
+    (data) => _list(data, Ilan.fromJson),
+    200,
+  );
+
+  @override
+  Future<List<Ilan>> getMyListings() => _request(
+    () => api.dio.get<Object>('${ApiEndpoints.listings}/benim'),
     (data) => _list(data, Ilan.fromJson),
     200,
   );

@@ -53,6 +53,24 @@ void main() {
   tearDown(() => dio.close());
 
   test(
+    'Kişisel liste geçmiş buluşmayı giriş belirteciyle ayrı uçtan alır',
+    () async {
+      adapter.body = [
+        {...listingJson(), 'bulusmaTarihi': '2020-01-01T00:00:00Z'},
+      ];
+      final items = await service.getMyListings();
+      expect(items.single.bulusmaTarihi, DateTime.utc(2020));
+      expect(adapter.requests.single.path, '/api/ilanlar/benim');
+      expect(adapter.requests.single.method, 'GET');
+      expect(adapter.requests.single.queryParameters, isEmpty);
+      expect(
+        adapter.requests.single.headers['Authorization'],
+        'Bearer first-token',
+      );
+    },
+  );
+
+  test(
     'Kategori ve liste yanıtları Web API nin JSON dizisinden okunur',
     () async {
       adapter.body = [

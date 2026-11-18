@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fixcampus_mobile/models/models.dart';
@@ -19,9 +20,20 @@ class TimeService extends FakeListingsService {
   TimeService(this.now);
   final DateTime Function() now;
   int searches = 0;
+  int publicLoads = 0;
+  Completer<void>? pendingSearch;
+
+  @override
+  Future<List<Ilan>> getListings() {
+    publicLoads++;
+    return super.getListings();
+  }
+
   @override
   Future<ListingPage> searchListings(ListingQuery query) async {
     searches++;
+    final pending = pendingSearch;
+    if (pending != null) await pending.future;
     final visible = items.where((i) => !policy.isExpired(i, now())).toList();
     return ListingPage(
       items: visible,
@@ -174,15 +186,23 @@ void main() {
     addTearDown(provider.dispose);
     await tester.pumpWidget(
       MaterialApp(
-        home: ExpiryAwareListingResults(
-          provider: provider,
-          query: const ListingQuery(activeSocialOnly: true),
-          clock: () => now,
-          builder: (page, loading, error, refresh) => Column(
-            children: [
-              Text('Toplam ${page.totalItems}'),
-              for (final i in page.items) Text(i.id),
-            ],
+        home: ListenableBuilder(
+          listenable: provider,
+          builder: (_, _) => ExpiryAwareListingResults(
+            provider: provider,
+            query: const ListingQuery(activeSocialOnly: true),
+            clock: () => now,
+            builder: (page, loading, error, refresh) => Column(
+              children: [
+                if (loading)
+                  const Text('Yükleniyor')
+                else
+                  Text('Toplam ${page.totalItems}'),
+                if (!loading && page.items.isEmpty)
+                  const Text('Buluşma bulunamadı'),
+                for (final i in page.items) Text(i.id),
+              ],
+            ),
           ),
         ),
       ),
@@ -190,11 +210,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('social'), findsOneWidget);
     expect(find.text('Toplam 1'), findsOneWidget);
+    final pending = service.pendingSearch = Completer<void>();
     now = start.add(const Duration(seconds: 2));
     await tester.pump(const Duration(seconds: 2));
+    expect(find.text('Yükleniyor'), findsOneWidget);
+    expect(find.text('Toplam 1'), findsNothing);
+    expect(find.text('Buluşma bulunamadı'), findsNothing);
+    expect(find.text('social'), findsNothing);
+    expect(service.searches, 2);
+    expect(service.publicLoads, 0);
+    pending.complete();
     await tester.pumpAndSettle();
     expect(find.text('social'), findsNothing);
     expect(find.text('Toplam 0'), findsOneWidget);
+    expect(find.text('Buluşma bulunamadı'), findsOneWidget);
     expect(service.searches, 2);
   });
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 
@@ -35,6 +36,10 @@ class _ListingExpiryBoundaryState extends State<ListingExpiryBoundary>
   @override
   void didUpdateWidget(covariant ListingExpiryBoundary oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.clock == widget.clock &&
+        listEquals(oldWidget.items, widget.items)) {
+      return;
+    }
     _now = widget.clock();
     _schedule();
   }

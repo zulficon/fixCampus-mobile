@@ -65,7 +65,9 @@ class ProfileScreen extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final listingsProvider = context.watch<ListingsProvider>();
     final user = auth.currentUser;
-    final userListings = listingsProvider.getUserListings(user?.id ?? '');
+    final userListings = listingsProvider.getUserListings(user?.id);
+    final listingsError = listingsProvider.myListingsError;
+    final loadingListings = listingsProvider.isLoadingMyListings;
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -308,13 +310,16 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Text(
-                    '${userListings.length} İlan',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF71717A),
+                  if (user != null &&
+                      (userListings.isNotEmpty ||
+                          (!loadingListings && listingsError == null)))
+                    Text(
+                      '${userListings.length} İlan',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF71717A),
+                      ),
                     ),
-                  ),
                   const SizedBox(width: 8),
                   TextButton(
                     onPressed: () => Navigator.pushNamed(context, AppRoutes.myListings),
@@ -326,7 +331,24 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 6),
 
             // İlan Listesi
-            if (userListings.isEmpty)
+            if (loadingListings) const LinearProgressIndicator(),
+            if (listingsError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(listingsError)),
+                    TextButton(
+                      onPressed: listingsProvider.loadMyListings,
+                      child: const Text('İlanları yenile'),
+                    ),
+                  ],
+                ),
+              ),
+            if (user != null &&
+                userListings.isEmpty &&
+                !loadingListings &&
+                listingsError == null)
               const EmptyState(
                 icon: Icons.post_add_outlined,
                 title: 'Henüz İlanınız Yok',

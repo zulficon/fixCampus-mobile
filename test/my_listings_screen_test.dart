@@ -34,6 +34,11 @@ void main() {
     await auth.initialize();
     service = FakeListingsService();
     listings = ListingsProvider(service: service);
+    auth.addListener(
+      () => listings.setSession(
+        auth.isLoggedIn && !auth.hasSessionError ? auth.currentUser?.id : null,
+      ),
+    );
     opened = null;
   });
   tearDown(() async {
@@ -42,6 +47,7 @@ void main() {
     await authService.events.close();
   });
   Future<void> mount(WidgetTester tester, {bool settle = true}) async {
+    listings.setSession(auth.currentUser?.id);
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -73,16 +79,18 @@ void main() {
       tester.widgetList<ListingCard>(find.byType(ListingCard)).toList();
 
   testWidgets(
-    'Yalnız kendi ilanları tüm durumlarıyla yeniden eskiye sıralanır',
+    'Kişisel uçtan gelen geçmiş buluşmalar yeniden eskiye sıralanır',
     (tester) async {
-      service.items = [
+      service.items = [];
+      service.personalItems = [
         Ilan.fromJson({
           ...listingJson(id: 'old'),
           'durum': 'Cozuldu',
+          'bulusmaTarihi': '2020-11-01T10:00:00Z',
           'olusturulmaTarihi': '2026-11-01T10:00:00Z',
         }),
         Ilan.fromJson({...listingJson(id: 'other'), 'sahipId': 'other'}),
-        Ilan.fromJson({...listingJson(id: 'new'), 'durum': 'Gizli'}),
+        Ilan.fromJson(listingJson(id: 'new')),
       ];
       await mount(tester);
       expect(cards(tester).map((c) => c.ilan.id), ['new', 'old']);
@@ -103,8 +111,8 @@ void main() {
   testWidgets('İlk yükleme sırasında boş liste mesajı gösterilmez', (
     tester,
   ) async {
-    service.pendingList = Completer<List<Ilan>>();
-    final pending = service.pendingList!;
+    service.pendingMyListings = Completer<List<Ilan>>();
+    final pending = service.pendingMyListings!;
     await mount(tester, settle: false);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     expect(find.text('Henüz ilanınız yok'), findsNothing);
@@ -199,7 +207,7 @@ void main() {
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await listings.load();
+    listings.setSession(auth.currentUser?.id);
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -318,7 +326,14 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await listings.load();
+    listings.setSession(auth.currentUser?.id);
+    service.items = [];
+    service.personalItems = [
+      Ilan.fromJson({
+        ...listingJson(title: 'Geçmiş buluşmam'),
+        'bulusmaTarihi': '2020-11-01T10:00:00Z',
+      }),
+    ];
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -333,6 +348,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.text('Geçmiş buluşmam'), findsOneWidget);
     await tester.ensureVisible(find.text('Tümünü gör'));
     await tester.tap(find.text('Tümünü gör'));
     await tester.pumpAndSettle();

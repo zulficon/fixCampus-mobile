@@ -5,6 +5,7 @@ import '../providers/listings_provider.dart';
 import '../services/api_exception.dart';
 import '../services/listings_service.dart';
 import '../utils/listing_search_filter.dart';
+import 'listing_expiry_boundary.dart';
 
 /// Her ekran kendi sorgusunu tutar; eski filtre/hesap yanıtı yeni sonucu ezemez.
 class ServerListingResults extends StatefulWidget {
@@ -14,11 +15,13 @@ class ServerListingResults extends StatefulWidget {
     required this.query,
     required this.builder,
     this.onPageCorrected,
+    this.expiryClock,
   });
 
   final ListingsProvider provider;
   final ListingQuery query;
   final ValueChanged<int>? onPageCorrected;
+  final DateTime Function()? expiryClock;
   final Widget Function(
     ListingPaginationResult page,
     bool loading,
@@ -70,7 +73,7 @@ class _ServerListingResultsState extends State<ServerListingResults> {
     }
   }
 
-  Future<void> _fetch() async {
+  Future<void> _fetch({bool discardPage = false}) async {
     if (!mounted) return;
     final version = ++_request;
     final provider = widget.provider;
@@ -78,6 +81,7 @@ class _ServerListingResultsState extends State<ServerListingResults> {
     setState(() {
       _loading = true;
       _error = null;
+      if (discardPage) _page = null;
     });
     try {
       var page = await provider.searchListings(query);
@@ -120,24 +124,46 @@ class _ServerListingResultsState extends State<ServerListingResults> {
   }
 
   Future<void> _refresh() async {
-    await widget.provider.load();
-    if (mounted) await _fetch();
+    final provider = widget.provider;
+    final session = provider.sessionRevision;
+    final request = _request;
+    await provider.load();
+    if (!mounted ||
+        provider != widget.provider ||
+        provider.sessionRevision != session ||
+        _request != request) {
+      return;
+    }
+    // Bu yenilemenin değiştirdiği veri sürümünü burada işledik.
+    _signature = _currentSignature;
+    await _fetch();
+  }
+
+  Future<void> _refreshAfterExpiry() async {
+    if (_page == null && _loading) return;
+    // Kartlar, toplamlar ve sayfa bilgisi aynı API yanıtından gelir.
+    await _fetch(discardPage: true);
   }
 
   @override
   Widget build(BuildContext context) {
     final page = _page;
-    return widget.builder(
-      ListingPaginationResult(
-        items: page?.items ?? const [],
-        currentPage: page?.page ?? 1,
-        totalPages: page?.totalPages ?? 1,
-        totalItems: page?.totalCount ?? 0,
-        pageSize: page?.pageSize ?? widget.query.pageSize,
-      ),
-      _loading,
-      _error,
-      _refresh,
+    final result = ListingPaginationResult(
+      items: page?.items ?? const [],
+      currentPage: page?.page ?? 1,
+      totalPages: page?.totalPages ?? 1,
+      totalItems: page?.totalCount ?? 0,
+      pageSize: page?.pageSize ?? widget.query.pageSize,
+    );
+    final clock = widget.expiryClock;
+    if (clock == null) {
+      return widget.builder(result, _loading, _error, _refresh);
+    }
+    return ListingExpiryBoundary(
+      items: result.items,
+      clock: clock,
+      onExpiry: _refreshAfterExpiry,
+      builder: (_, _) => widget.builder(result, _loading, _error, _refresh),
     );
   }
 }

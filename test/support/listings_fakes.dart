@@ -82,6 +82,8 @@ class FakeListingsService implements ListingsService {
   ];
   Object? error;
   Completer<List<Ilan>>? pendingList;
+  Completer<List<Ilan>>? pendingMyListings;
+  List<Ilan>? personalItems;
   Completer<Ilan>? pendingCreate;
   SaveListingRequest? savedRequest;
   int detailsRead = 0;
@@ -101,6 +103,12 @@ class FakeListingsService implements ListingsService {
   Future<List<Ilan>> getListings() async {
     check();
     return pendingList != null ? pendingList!.future : List.unmodifiable(items);
+  }
+
+  @override
+  Future<List<Ilan>> getMyListings() async {
+    check();
+    return pendingMyListings?.future ?? List.unmodifiable(personalItems ?? items);
   }
 
   @override

@@ -258,7 +258,9 @@ class _RadarFeedScreenState extends State<RadarFeedScreen> {
                         hintText:
                             'Sosyal ilanlarda başlık, açıklama veya yer ara...',
                         hasActiveFilters: _hasActiveFilters,
-                        totalResults: page.totalItems,
+                        totalResults: loading || error != null
+                            ? null
+                            : page.totalItems,
                         onResetFilters: _resetFilters,
                         onChanged: (_) => setState(() => _currentPage = 1),
                         onClear: () => setState(() {

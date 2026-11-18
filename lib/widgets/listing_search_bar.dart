@@ -50,18 +50,21 @@ class ListingSearchBar extends StatelessWidget {
                   )
                 : null,
           ),
-          if (hasActiveFilters && totalResults != null) ...[
+          if (hasActiveFilters &&
+              (totalResults != null || onResetFilters != null)) ...[
             const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(
-                  child: Text(
-                    '$totalResults ilan bulundu',
-                    style: AppTheme.meta.copyWith(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
+                if (totalResults != null)
+                  Flexible(
+                    child: Text(
+                      '$totalResults ilan bulundu',
+                      style: AppTheme.meta.copyWith(fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
+                if (totalResults == null) const Spacer(),
                 if (onResetFilters != null)
                   TextButton.icon(
                     onPressed: onResetFilters,

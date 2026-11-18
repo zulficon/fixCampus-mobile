@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import '../providers/listings_provider.dart';
 import '../services/listings_service.dart';
-import '../security/listing_expiry_policy.dart';
 import '../utils/listing_search_filter.dart';
 import 'server_listing_results.dart';
-import 'listing_expiry_boundary.dart';
 
 /// API sayfalamasını korur; süre dolunca toplamlar da sunucudan yenilenir.
 class ExpiryAwareListingResults extends StatelessWidget {
@@ -32,24 +30,7 @@ class ExpiryAwareListingResults extends StatelessWidget {
     provider: provider,
     query: query,
     onPageCorrected: onPageCorrected,
-    builder: (page, loading, error, refresh) => ListingExpiryBoundary(
-      items: page.items,
-      clock: clock,
-      onExpiry: refresh,
-      builder: (_, now) => builder(
-        ListingPaginationResult(
-          items: page.items
-              .where((i) => !const ListingExpiryPolicy().isExpired(i, now))
-              .toList(),
-          currentPage: page.currentPage,
-          totalPages: page.totalPages,
-          totalItems: page.totalItems,
-          pageSize: page.pageSize,
-        ),
-        loading,
-        error,
-        refresh,
-      ),
-    ),
+    expiryClock: clock,
+    builder: builder,
   );
 }

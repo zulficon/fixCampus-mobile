@@ -153,7 +153,9 @@ class _ListingSearchScreenState extends State<ListingSearchScreen> {
                             hintText:
                                 'Başlık, açıklama, konum veya kategori ara...',
                             hasActiveFilters: _hasActiveFilters,
-                            totalResults: pagination.totalItems,
+                            totalResults: queryLoading || queryError != null
+                                ? null
+                                : pagination.totalItems,
                             onResetFilters: _resetFilters,
                             onChanged: (_) {
                               setState(() {
