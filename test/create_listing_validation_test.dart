@@ -133,7 +133,7 @@ void main() {
     await submit(tester, edit: true);
     const error = 'Sosyal ilan için gelecekte bir buluşma zamanı seçin.';
     expect(find.text(error), findsOneWidget);
-    final dateButton = find.widgetWithIcon(OutlinedButton, Icons.schedule);
+    final dateButton = find.byKey(const ValueKey('meeting_date_button'));
     await tester.ensureVisible(dateButton);
     await tester.tap(dateButton);
     await tester.pumpAndSettle();
@@ -141,8 +141,6 @@ void main() {
     tester
         .widget<CalendarDatePicker>(find.byType(CalendarDatePicker))
         .onDateChanged(tomorrow);
-    await tester.tap(find.text('OK').last);
-    await tester.pumpAndSettle();
     await tester.tap(find.text('OK').last);
     await tester.pumpAndSettle();
     expect(find.text(error), findsNothing);

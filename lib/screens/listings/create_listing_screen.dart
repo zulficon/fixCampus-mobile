@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/listings_provider.dart';
@@ -7,16 +6,20 @@ import '../../providers/auth_provider.dart';
 import '../../security/listing_access.dart';
 import '../../security/listing_mutation_policy.dart';
 import '../../security/role_session_policy.dart';
+import '../../theme/app_theme.dart';
 import '../../validation/listing_validator.dart';
 import '../../services/api_exception.dart';
 import '../../services/listings_service.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/listings_load_status.dart';
+import '../../widgets/meeting_date_time_picker.dart';
+import '../../widgets/meeting_location_picker.dart';
 
 /// Mevcut ilan formunun ortak API'ye bağlanan oluşturma/düzenleme akışı.
 class CreateListingScreen extends StatefulWidget {
-  const CreateListingScreen({super.key, this.ilan});
+  const CreateListingScreen({super.key, this.ilan, this.nowProvider});
   final Ilan? ilan;
+  final DateTime Function()? nowProvider;
 
   @override
   State<CreateListingScreen> createState() => _CreateListingScreenState();
@@ -61,35 +64,15 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
-    final now = DateTime.now();
-    final first = DateTime(now.year, now.month, now.day);
-    final last = DateTime(now.year + 5, 12, 31);
-    final initial =
-        _tarih != null && !_tarih!.isBefore(first) && !_tarih!.isAfter(last)
-        ? _tarih!
-        : now;
-    final date = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: first,
-      lastDate: last,
-    );
-    if (!mounted || date == null) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(initial),
-    );
-    if (!mounted || time == null) return;
+  DateTime _now() =>
+      widget.nowProvider != null ? widget.nowProvider!() : DateTime.now();
+
+  void _onMeetingDateChanged(DateTime? date) {
     setState(() {
-      _tarih = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-      _dateError = _validator.meetingDate(_tur, _tarih);
+      _tarih = date;
+      _dateError = date == null
+          ? null
+          : _validator.meetingDate(_tur, date, now: _now());
     });
   }
 
@@ -100,7 +83,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
       setState(() => _error = listingAccessMessage(access));
       return;
     }
-    final dateError = _validator.meetingDate(_tur, _tarih);
+    final dateError = _validator.meetingDate(_tur, _tarih, now: _now());
     if (dateError != null) {
       setState(() => _dateError = dateError);
       return;
@@ -136,6 +119,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
         setState(() {
           _kategoriId = null;
           _tarih = null;
+          _error = null;
+          _dateError = null;
           _tur = IlanTuru.sosyal;
         });
         ScaffoldMessenger.of(
@@ -180,10 +165,14 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
         ? _kategoriId
         : null;
     final busy = _saving || provider.isSaving;
+    final showCreateAppBar =
+        widget.ilan == null && (ModalRoute.of(context)?.canPop ?? false);
     return Scaffold(
-      appBar: widget.ilan == null
-          ? null
-          : AppBar(title: const Text('İlanı Düzenle')),
+      appBar: widget.ilan != null
+          ? AppBar(title: const Text('İlanı Düzenle'))
+          : showCreateAppBar
+          ? AppBar(title: const Text('Yeni İlan'))
+          : null,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -195,23 +184,25 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(AppTheme.smallCardRadius),
+                  border: Border.all(color: AppTheme.line),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF18181B),
-                        borderRadius: BorderRadius.circular(10),
+                        color: AppTheme.ink,
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.iconRadius,
+                        ),
                       ),
                       child: Icon(
                         widget.ilan == null
                             ? Icons.add_circle_outline
                             : Icons.edit_outlined,
-                        color: Colors.white,
+                        color: AppTheme.surface,
                         size: 20,
                       ),
                     ),
@@ -221,24 +212,15 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.ilan == null
-                                ? 'Yeni İlan'
-                                : 'İlan Bilgileri',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A),
-                            ),
+                            widget.ilan == null ? 'Yeni İlan' : 'İlan Bilgileri',
+                            style: AppTheme.cardTitle,
                           ),
                           const SizedBox(height: 2),
                           Text(
                             widget.ilan == null
                                 ? 'Kampüsteki arkadaşlarınla paylaş'
                                 : 'İlan detaylarını güncelleyin',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF64748B),
-                            ),
+                            style: AppTheme.meta.copyWith(fontSize: 12),
                           ),
                         ],
                       ),
@@ -253,11 +235,12 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               DropdownButtonFormField<IlanTuru>(
                 key: ValueKey(_tur),
                 initialValue: _tur,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'İlan türü',
-                  prefixIcon: const Icon(Icons.campaign_outlined, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  prefixIcon: Icon(
+                    Icons.campaign_outlined,
+                    size: 20,
+                    color: AppTheme.muted,
                   ),
                 ),
                 items: const [
@@ -277,6 +260,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                         _tur = value!;
                         _kategoriId = null;
                         _tarih = null;
+                        _error = null;
                         _dateError = null;
                       }),
               ),
@@ -287,12 +271,13 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 controller: _baslik,
                 enabled: !busy,
                 maxLength: 150,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'İlan Başlığı',
                   hintText: 'Örn: Final Çalışma Grubu / Mavi Defter',
-                  prefixIcon: const Icon(Icons.title_outlined, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  prefixIcon: Icon(
+                    Icons.title_outlined,
+                    size: 20,
+                    color: AppTheme.muted,
                   ),
                 ),
                 validator: _validator.title,
@@ -304,11 +289,12 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 key: ValueKey('${_tur.name}:$selected'),
                 initialValue: selected,
                 isExpanded: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Kategori',
-                  prefixIcon: const Icon(Icons.category_outlined, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  prefixIcon: Icon(
+                    Icons.category_outlined,
+                    size: 20,
+                    color: AppTheme.muted,
                   ),
                 ),
                 hint: Text(
@@ -337,16 +323,19 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 controller: _yer,
                 enabled: !busy,
                 maxLength: 200,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Yer',
                   hintText: 'Örn: Merkez Kütüphane 2. Kat',
-                  prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  prefixIcon: Icon(
+                    Icons.location_on_outlined,
+                    size: 20,
+                    color: AppTheme.muted,
                   ),
                 ),
                 validator: _validator.location,
               ),
+              const SizedBox(height: 10),
+              MeetingLocationPicker(controller: _yer, enabled: !busy),
               const SizedBox(height: 16),
 
               // Açıklama (TextFormField 2)
@@ -355,14 +344,15 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 enabled: !busy,
                 maxLength: 3000,
                 maxLines: 4,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Açıklama',
                   hintText: 'Detaylı bilgi, notlar veya koşullar...',
-                  prefixIcon: const Icon(Icons.notes_outlined, size: 20),
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  prefixIcon: Icon(
+                    Icons.notes_outlined,
+                    size: 20,
+                    color: AppTheme.muted,
                   ),
+                  alignLabelWithHint: true,
                 ),
                 validator: _validator.description,
               ),
@@ -370,24 +360,11 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               // Sosyal İlan Buluşma Zamanı
               if (_tur == IlanTuru.sosyal) ...[
                 const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: busy ? null : _selectDate,
-                  icon: const Icon(Icons.schedule, size: 18),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  label: Text(
-                    _tarih == null
-                        ? 'Buluşma tarihi ve saati seçin'
-                        : DateFormat('dd.MM.yyyy HH:mm').format(_tarih!),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
+                MeetingDateTimePicker(
+                  value: _tarih,
+                  enabled: !busy,
+                  nowProvider: widget.nowProvider,
+                  onChanged: _onMeetingDateChanged,
                 ),
               ],
               if (_dateError != null)
@@ -438,6 +415,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 icon: widget.ilan == null
                     ? Icons.check_circle_outline
                     : Icons.save_outlined,
+                large: true,
                 isLoading: busy,
                 onPressed: provider.isLoading || categories.isEmpty
                     ? null

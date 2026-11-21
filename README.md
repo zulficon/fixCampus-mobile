@@ -57,6 +57,7 @@ mobil uygulaması. BLM4587 iOS ile Mobil Uygulama Geliştirme I dönem projesidi
   detay ekranında süresi dolmuş buluşmaya katılımı kapatma. Kayıp/buluntuya süre uygulanmaz.
 
 - **Berna Kalkan:** Gerçek katılım servisi (PUT/DELETE /api/ilanlar/{id}/katilim), ilan sahibine katılımcı listesi, Radar tasarımı ve ortak harita bağlantısı tamamlandı. İlk yükleme, kart üzerinden katılım, tarih uyarısı ve oturum doğrulama geri bildirimleri için düzeltmeler eklendi.
+- **Berke Mahmut Acar:** Sosyal buluşma formu için kampüs yer seçicisi (`MeetingLocationPicker`), ayrı tarih ve saat seçicileri, hızlı buluşma zamanı çipleri (`MeetingDateTimePicker`) ve tarih değişiminde tarih uyarısının güncellenmesi tamamlandı.
 - Radar özetine kaz, Kayıp-Buluntu bilgi kartına anahtarlı rakun ve Profil kartına ilan sayısından bağımsız görünen 80 dp boyutunda kapibara stickerları eklendi. Görseller uygulamaya gömülüdür ve çevrimdışı görünür. AvatarStack ve AppSwitch ortak bileşenleri sonraki ekranlarda kullanılacak.
 
 ## Uygulama ekranları
@@ -116,6 +117,7 @@ Gerçek iki hesaplı emülatör gösterimi raporun 4. hafta kontrolüdür.
 
 ## Teknik belgeler
 
+- [Beşinci hafta — Berke: Buluşma formu ve yer/tarih/saat seçicileri](docs/hafta-05-bulusma-formu.md)
 - [Android canlı test gözlemleri ve geri bildirim düzeltmeleri](docs/hafta-05-android-canli-test.md)
 
 - [Sosyal ilan süre kuralı](docs/hafta-05-sure-kurali.md)
